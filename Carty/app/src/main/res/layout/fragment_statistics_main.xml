@@ -16,9 +16,9 @@
         android:text="Топ товаров по затратам"
         android:textSize="24sp"
         app:cornerRadius="10dp"
-        app:layout_constraintEnd_toEndOf="@+id/statLable"
-        app:layout_constraintStart_toStartOf="@+id/statLable"
-        app:layout_constraintTop_toBottomOf="@+id/statLable" />
+        app:layout_constraintEnd_toEndOf="@+id/mainStatLable"
+        app:layout_constraintStart_toStartOf="@+id/mainStatLable"
+        app:layout_constraintTop_toBottomOf="@+id/mainStatLable" />
 
     <Button
         android:id="@+id/statButton2"
@@ -66,7 +66,7 @@
         app:layout_constraintTop_toBottomOf="@+id/statButton3" />
 
     <TextView
-        android:id="@+id/statLable"
+        android:id="@+id/mainStatLable"
         android:layout_width="364dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="128dp"

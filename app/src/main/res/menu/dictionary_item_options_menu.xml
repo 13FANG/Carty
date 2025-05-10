@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item
-        android:id="@+id/action_dict_edit"
-        android:title="@string/user_option_edit" /> <!-- Используем ту же строку "Редактировать" -->
-    <item
-        android:id="@+id/action_dict_delete"
-        android:title="@string/user_option_delete" /> <!-- Используем ту же строку "Удалить" -->
-</menu>

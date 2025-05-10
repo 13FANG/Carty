@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/addDepartmentLable"
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="128dp"
+        android:fontFamily="@font/uncage"
+        android:text="добавление отдела"
+        android:textAlignment="center"
+        android:textColor="#3F50B4"
+        android:textSize="36sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintTop_toBottomOf="@+id/addDepartmentLable"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <EditText
+                android:id="@+id/departmentNameET"
+                android:layout_width="300dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="148dp"
+                android:ems="10"
+                android:fontFamily="@font/pf_highway_sans_pro"
+                android:hint="Название отдела"
+                android:inputType="textCapSentences"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <Button
+                android:id="@+id/saveDepartmentButton"
+                style="@style/Widget.Material3.Button"
+                android:layout_width="0dp"
+                android:layout_height="55dp"
+                android:layout_marginTop="16dp"
+                android:backgroundTint="#3F51B5"
+                android:fontFamily="@font/pf_highway_sans_pro"
+                android:text="сохранить"
+                android:textSize="24sp"
+                app:cornerRadius="10dp"
+                app:layout_constraintEnd_toEndOf="@+id/departmentNameET"
+                app:layout_constraintStart_toStartOf="@+id/departmentNameET"
+                app:layout_constraintTop_toBottomOf="@+id/departmentNameET" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </ScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

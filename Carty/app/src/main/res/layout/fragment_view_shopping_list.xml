@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/constraintLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/addProductToListFAB"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="32dp"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="24dp"
+            android:backgroundTint="#3F51B5"
+            android:clickable="true"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/FinishListFAB"
+            app:layout_constraintHorizontal_chainStyle="spread_inside"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:maxImageSize="32dp"
+            app:srcCompat="@drawable/addicon"
+            app:tint="#FFFFFF" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/FinishListFAB"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="24dp"
+            android:backgroundTint="#3F51B5"
+            android:clickable="true"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/toOrFromFavoriteFAB"
+            app:layout_constraintStart_toEndOf="@+id/addProductToListFAB"
+            app:layout_constraintTop_toTopOf="parent"
+            app:maxImageSize="32dp"
+            app:srcCompat="@drawable/checkicon"
+            app:tint="#FFFFFF" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/toOrFromFavoriteFAB"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="24dp"
+            android:backgroundTint="#3F51B5"
+            android:clickable="true"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/deleteListFAB"
+            app:layout_constraintStart_toEndOf="@+id/FinishListFAB"
+            app:layout_constraintTop_toTopOf="parent"
+            app:maxImageSize="32dp"
+            app:srcCompat="@drawable/notfavoriteicon"
+            app:tint="#FFFFFF" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/deleteListFAB"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:layout_marginEnd="32dp"
+            android:layout_marginBottom="24dp"
+            android:backgroundTint="#3F51B5"
+            android:clickable="true"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/toOrFromFavoriteFAB"
+            app:layout_constraintTop_toTopOf="parent"
+            app:maxImageSize="32dp"
+            app:srcCompat="@drawable/binicon"
+            app:tint="#FFFFFF" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/currentListItemsRV"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="24dp"
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+        app:layout_constraintBottom_toTopOf="@+id/constraintLayout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/listNameET"
+        tools:listitem="@layout/item_shopping_list_item" />
+
+    <EditText
+        android:id="@+id/listNameET"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="32dp"
+        android:layout_marginEnd="24dp"
+        android:ems="10"
+        android:fontFamily="@font/pf_highway_sans_pro"
+        android:hint="Название списка"
+        android:inputType="text"
+        android:text="Случайное название"
+        android:textColor="#3F51B5"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_chainStyle="spread"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

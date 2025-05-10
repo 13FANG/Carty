@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/loginLable"
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="128dp"
+        android:fontFamily="@font/uncage"
+        android:lineSpacingExtra="4dp"
+        android:text="Вход в аккаунт"
+        android:textAlignment="center"
+        android:textColor="#3F50B4"
+        android:textSize="48sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/loginLable">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <EditText
+                android:id="@+id/authEmailET"
+                android:layout_width="300dp"
+                android:layout_height="42dp"
+                android:layout_marginTop="72dp"
+                android:ems="10"
+                android:fontFamily="@font/pf_highway_sans_pro"
+                android:hint="Email"
+                android:inputType="textEmailAddress"
+                android:textSize="24sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <EditText
+                android:id="@+id/authPasswordET"
+                android:layout_width="0dp"
+                android:layout_height="42dp"
+                android:layout_marginTop="16dp"
+                android:ems="10"
+                android:fontFamily="@font/pf_highway_sans_pro"
+                android:hint="Пароль"
+                android:inputType="textPassword"
+                android:textSize="24sp"
+                app:layout_constraintEnd_toEndOf="@+id/authEmailET"
+                app:layout_constraintStart_toStartOf="@+id/authEmailET"
+                app:layout_constraintTop_toBottomOf="@+id/authEmailET" />
+
+            <Button
+                android:id="@+id/logInButton"
+                style="@style/Widget.Material3.Button"
+                android:layout_width="0dp"
+                android:layout_height="55dp"
+                android:layout_marginTop="16dp"
+                android:backgroundTint="#3F51B5"
+                android:fontFamily="@font/pf_highway_sans_pro"
+                android:text="войти"
+                android:textSize="24sp"
+                app:cornerRadius="10dp"
+                app:layout_constraintEnd_toEndOf="@+id/authEmailET"
+                app:layout_constraintStart_toStartOf="@+id/authEmailET"
+                app:layout_constraintTop_toBottomOf="@+id/authPasswordET" />
+
+            <TextView
+                android:id="@+id/linkToRegistrationTV"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:clickable="true"
+                android:fontFamily="@font/ropa_sans_sc_ptt"
+                android:text="Нет аккаунта? Зарегистрироваться"
+                android:textAlignment="center"
+                android:textColor="#3F50B4"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toEndOf="@+id/logInButton"
+                app:layout_constraintStart_toStartOf="@+id/logInButton"
+                app:layout_constraintTop_toBottomOf="@+id/logInButton" />
+
+            <TextView
+                android:id="@+id/passwordRecoveryLinkTV"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:clickable="true"
+                android:fontFamily="@font/ropa_sans_sc_ptt"
+                android:text="Восстановить пароль"
+                android:textAlignment="center"
+                android:textColor="#3F50B4"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toEndOf="@+id/logInButton"
+                app:layout_constraintStart_toStartOf="@+id/logInButton"
+                app:layout_constraintTop_toBottomOf="@+id/linkToRegistrationTV" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </ScrollView>
+</androidx.constraintlayout.widget.ConstraintLayout>

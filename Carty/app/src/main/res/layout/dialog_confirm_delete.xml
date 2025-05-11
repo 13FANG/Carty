@@ -22,25 +22,27 @@
             android:layout_marginTop="16dp"
             android:clickable="false"
             android:fontFamily="@font/ropa_sans_sc_ptt"
-            android:text="После нажатия кнопки восстновить пароль будет отправлен на уеазанный email"
+            android:text="Вы уверенны?"
             android:textAlignment="center"
             android:textColor="#3F51B5"
-            android:textSize="16sp"
+            android:textSize="40sp"
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <EditText
-            android:id="@+id/recoveryEmailET"
+        <TextView
+            android:id="@+id/delDialInfoTV"
             android:layout_width="300dp"
-            android:layout_height="42dp"
+            android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:ems="10"
-            android:fontFamily="@font/pf_highway_sans_pro"
-            android:hint="Email"
-            android:inputType="textEmailAddress"
-            android:textSize="24sp"
+            android:clickable="false"
+            android:fontFamily="@font/ropa_sans_sc_ptt"
+            android:text="При удалении данного отдела у всех\nтоваров у которых он указан, отдел поменяется на &quot;без отдела&quot;"
+            android:textAlignment="center"
+            android:textColor="#3F51B5"
+            android:textSize="16sp"
+            android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/delDialLableTV" />
@@ -48,19 +50,34 @@
         <Button
             android:id="@+id/delYesButton"
             style="@style/Widget.Material3.Button"
-            android:layout_width="300dp"
-            android:layout_height="55dp"
+            android:layout_width="144dp"
+            android:layout_height="48dp"
             android:layout_marginTop="16dp"
             android:layout_marginBottom="16dp"
             android:backgroundTint="#3F51B5"
             android:fontFamily="@font/pf_highway_sans_pro"
-            android:text="восстановить"
+            android:text="да"
             android:textSize="24sp"
             app:cornerRadius="10dp"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/recoveryEmailET" />
+            app:layout_constraintStart_toStartOf="@+id/delDialInfoTV"
+            app:layout_constraintTop_toBottomOf="@+id/delDialInfoTV" />
+
+        <Button
+            android:id="@+id/delNoButton"
+            style="@style/Widget.Material3.Button"
+            android:layout_width="144dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp"
+            android:backgroundTint="#3F51B5"
+            android:fontFamily="@font/pf_highway_sans_pro"
+            android:text="нет"
+            android:textSize="24sp"
+            app:cornerRadius="10dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="@+id/delDialInfoTV"
+            app:layout_constraintTop_toBottomOf="@+id/delDialInfoTV" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 </com.google.android.material.card.MaterialCardView>

@@ -15,6 +15,18 @@
         android:background="#FFFFFF"
         android:padding="16dp">
 
+        <ImageButton
+            android:id="@+id/delItemProdictImageButton"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:backgroundTint="#00FFFFFF"
+            android:scaleType="fitCenter"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@drawable/binicon"
+            app:tint="#F44336" />
+
         <TextView
             android:id="@+id/stat1PositionTV"
             android:layout_width="wrap_content"
@@ -47,6 +59,7 @@
             android:id="@+id/departmentLableTV"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
             android:fontFamily="@font/pf_highway_sans_pro"
             android:text="Отдел: "
             android:textColor="#3F51B5"
@@ -62,12 +75,12 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="4dp"
             android:fontFamily="@font/pf_highway_sans_pro"
+            android:text="Колбасный"
             android:textColor="#3F51B5"
             android:textColorHint="#000000"
             android:textSize="24sp"
             android:textStyle="bold"
-            android:text="Колбасный"
-            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/delItemProdictImageButton"
             app:layout_constraintStart_toEndOf="@+id/departmentLableTV"
             app:layout_constraintTop_toTopOf="@+id/departmentLableTV" />
 
@@ -75,7 +88,7 @@
             android:id="@+id/unitLableTV"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
+            android:layout_marginTop="4dp"
             android:fontFamily="@font/pf_highway_sans_pro"
             android:text="Ед. изм: "
             android:textColor="#3F51B5"
@@ -96,7 +109,7 @@
             android:textColorHint="#000000"
             android:textSize="24sp"
             android:textStyle="bold"
-            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/delItemProdictImageButton"
             app:layout_constraintStart_toEndOf="@+id/unitLableTV"
             app:layout_constraintTop_toTopOf="@+id/unitLableTV" />
 
@@ -104,7 +117,7 @@
             android:id="@+id/priceLableTV"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
+            android:layout_marginTop="4dp"
             android:fontFamily="@font/pf_highway_sans_pro"
             android:text="Цена: "
             android:textColor="#3F51B5"

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/stat2ResultTV"
+        android:layout_width="350dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:fontFamily="@font/pf_highway_sans_pro"
+        android:text="Результат будет здесь"
+        android:textColor="#3F51B5"
+        android:textColorHint="#000000"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="@+id/stat2ProductSpinner"
+        app:layout_constraintStart_toStartOf="@+id/stat2ProductSpinner"
+        app:layout_constraintTop_toBottomOf="@+id/stat2ProductSpinner" />
+
+    <TextView
+        android:id="@+id/stat2Lable"
+        android:layout_width="364dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="92dp"
+        android:fontFamily="@font/uncage"
+        android:lineSpacingExtra="4dp"
+        android:text="Статистика покупок товара"
+        android:textAlignment="center"
+        android:textColor="#3F50B4"
+        android:textSize="40sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Spinner
+        android:id="@+id/stat2PeriodSpinner"
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:fontFamily="@font/pf_highway_sans_pro"
+        android:minHeight="42dp"
+        android:textSize="24sp"
+        app:layout_constraintEnd_toEndOf="@+id/stat2Lable"
+        app:layout_constraintStart_toStartOf="@+id/stat2Lable"
+        app:layout_constraintTop_toBottomOf="@+id/stat2Lable" />
+
+    <Spinner
+        android:id="@+id/stat2ProductSpinner"
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:fontFamily="@font/pf_highway_sans_pro"
+        android:minHeight="42dp"
+        android:textSize="24sp"
+        app:layout_constraintEnd_toEndOf="@+id/stat2Lable"
+        app:layout_constraintStart_toStartOf="@+id/stat2Lable"
+        app:layout_constraintTop_toBottomOf="@+id/stat2PeriodSpinner" />
+</androidx.constraintlayout.widget.ConstraintLayout>

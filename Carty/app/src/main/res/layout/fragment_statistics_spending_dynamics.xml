@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/stat3Lable"
+        android:layout_width="364dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="92dp"
+        android:fontFamily="@font/uncage"
+        android:lineSpacingExtra="4dp"
+        android:text="Динамика общих трат"
+        android:textAlignment="center"
+        android:textColor="#3F50B4"
+        android:textSize="40sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Spinner
+        android:id="@+id/stat3PeriodSpinner"
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="64dp"
+        android:fontFamily="@font/pf_highway_sans_pro"
+        android:minHeight="42dp"
+        android:textSize="24sp"
+        app:layout_constraintEnd_toEndOf="@+id/stat3Lable"
+        app:layout_constraintStart_toStartOf="@+id/stat3Lable"
+        app:layout_constraintTop_toBottomOf="@+id/stat3Lable" />
+
+    <com.github.mikephil.charting.charts.LineChart
+        android:id="@+id/stat4PieChart"
+        android:layout_width="match_parent"
+        android:layout_height="300dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="24dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/stat3PeriodSpinner" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

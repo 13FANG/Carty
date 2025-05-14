@@ -47,16 +47,4 @@ class ShoppingListsViewModel(private val repository: CartyRepository) : ViewMode
             callback(newId)
         }
     }
-
-    fun updateShoppingListsOrder(orderedLists: List<ShoppingList>) {
-        viewModelScope.launch {
-            val listsToUpdate = mutableListOf<ShoppingList>()
-            for ((index, list) in orderedLists.withIndex()) {
-                if (list.manualSortIndex != index) {
-                    listsToUpdate.add(list.copy(manualSortIndex = index, updatedAt = System.currentTimeMillis()))
-                }
-            }
-            listsToUpdate.forEach { repository.updateShoppingList(it) }
-        }
-    }
 }

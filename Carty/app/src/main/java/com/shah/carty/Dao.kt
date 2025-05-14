@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface DepartmentDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun addDepartment(department: Department)
+    suspend fun addDepartment(department: Department): Long
 
     @Update
     suspend fun updateDepartment(department: Department)
@@ -32,7 +32,7 @@ interface DepartmentDao {
 @Dao
 interface ProductDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun addProduct(product: Product)
+    suspend fun addProduct(product: Product): Long
 
     @Update
     suspend fun updateProduct(product: Product)
@@ -86,7 +86,7 @@ interface ShoppingListDao {
 @Dao
 interface ShoppingListItemDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun addShoppingListItem(shoppingListItem: ShoppingListItem)
+    suspend fun addShoppingListItem(shoppingListItem: ShoppingListItem): Long
 
     @Update
     suspend fun updateShoppingListItem(shoppingListItem: ShoppingListItem)

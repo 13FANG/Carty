@@ -1,6 +1,7 @@
 package com.shah.carty
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -55,7 +56,8 @@ class DepartmentsFragment : Fragment() {
                 val action = DepartmentsFragmentDirections.actionDepartmentsFragmentToEditDepartmentFragment(department.departmentId)
                 findNavController().navigate(action)
             },
-            onItemLongClicked = { department ->
+            onDeleteButtonClicked = { department ->
+                Log.d("DepartmentsFragment", "Delete button clicked for: ${department.departmentName}")
                 showDeleteConfirmationDialog(department)
             }
         )
@@ -87,6 +89,7 @@ class DepartmentsFragment : Fragment() {
             .create()
 
         dialogBinding.delYesButton.setOnClickListener {
+            Log.d("DepartmentsFragment", "Delete confirmed for: ${department.departmentName}")
             viewModel.deleteDepartment(department)
             dialog.dismiss()
         }

@@ -11,7 +11,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
-import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.firebase.auth.FirebaseAuth
 import com.shah.carty.databinding.FragmentShoppingListsBinding
@@ -32,7 +31,6 @@ class ShoppingListsFragment : Fragment() {
         get() = requireActivity().application as CartyApplication
 
     private lateinit var shoppingListAdapter: ShoppingListAdapter
-    private var itemTouchHelper: ItemTouchHelper? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -65,19 +63,12 @@ class ShoppingListsFragment : Fragment() {
             onItemClicked = { shoppingList ->
                 val action = ShoppingListsFragmentDirections.actionShoppingListsFragmentToViewShoppingListFragment(shoppingList.shoppingListId)
                 findNavController().navigate(action)
-            },
-            onOrderChanged = { updatedList ->
-                viewModel.updateShoppingListsOrder(updatedList)
             }
         )
         binding.shoppingListsRV.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = shoppingListAdapter
         }
-
-        val callback = SimpleItemTouchHelperCallback(shoppingListAdapter)
-        itemTouchHelper = ItemTouchHelper(callback)
-        itemTouchHelper?.attachToRecyclerView(binding.shoppingListsRV)
     }
 
     private fun observeViewModel() {
@@ -97,7 +88,7 @@ class ShoppingListsFragment : Fragment() {
         val currentUser = FirebaseAuth.getInstance().currentUser
         popup.menu.findItem(R.id.action_logout)?.isVisible = (currentUser != null)
         popup.menu.findItem(R.id.action_login)?.isVisible = (currentUser == null)
-
+        popup.menu.findItem(R.id.action_show_statistics)?.isVisible = false
 
         popup.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
@@ -109,10 +100,10 @@ class ShoppingListsFragment : Fragment() {
                     findNavController().navigate(ShoppingListsFragmentDirections.actionShoppingListsFragmentToDepartmentsFragment())
                     true
                 }
-                R.id.action_show_statistics -> {
-                    findNavController().navigate(ShoppingListsFragmentDirections.actionShoppingListsFragmentToStatisticsMainFragment())
-                    true
-                }
+//                R.id.action_show_statistics -> {
+//                    findNavController().navigate(ShoppingListsFragmentDirections.actionShoppingListsFragmentToStatisticsMainFragment())
+//                    true
+//                }
                 R.id.action_logout -> {
                     lifecycleScope.launch {
                         (cartyApp.repository as OfflineCartyRepository).clearLocalUserDataOnSignOut()
@@ -145,7 +136,6 @@ class ShoppingListsFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        itemTouchHelper?.attachToRecyclerView(null)
         binding.shoppingListsRV.adapter = null
         _binding = null
     }

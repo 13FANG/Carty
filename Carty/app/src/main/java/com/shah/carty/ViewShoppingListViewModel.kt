@@ -157,20 +157,4 @@ class ViewShoppingListViewModel(
             }
         }
     }
-
-    fun updateShoppingListItemsOrder(orderedItems: List<ShoppingListItem>) {
-        viewModelScope.launch {
-            val itemsToUpdate = mutableListOf<ShoppingListItem>()
-            for ((index, item) in orderedItems.withIndex()) {
-                if (item.manualSortOrder != index) {
-                    itemsToUpdate.add(item.copy(manualSortOrder = index))
-                }
-            }
-            itemsToUpdate.forEach { repository.updateShoppingListItem(it) }
-            _uiState.value.currentList?.let { list ->
-                val updatedList = list.copy(updatedAt = System.currentTimeMillis())
-                repository.updateShoppingList(updatedList)
-            }
-        }
-    }
 }

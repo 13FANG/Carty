@@ -1,15 +1,11 @@
 package com.shah.carty
 
 import android.os.Bundle
-import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
-import android.widget.EditText
-import android.widget.Spinner
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.core.widget.doOnTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.setFragmentResultListener
@@ -18,7 +14,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
-import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.shah.carty.databinding.DialogAddItemDetailsBinding
@@ -38,8 +33,6 @@ class ViewShoppingListFragment : Fragment() {
     }
 
     private lateinit var shoppingListItemAdapter: ShoppingListItemAdapter
-    private var itemTouchHelper: ItemTouchHelper? = null
-
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -72,31 +65,24 @@ class ViewShoppingListFragment : Fragment() {
             onDeleteItemClicked = { item ->
                 showDeleteItemConfirmationDialog(item)
             },
-            onItemClicked = {},
-            onOrderChanged = { updatedItems ->
-                viewModel.updateShoppingListItemsOrder(updatedItems)
+            onItemClicked = {
             }
         )
         binding.viewShoppingListRV.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = shoppingListItemAdapter
         }
-        val callback = SimpleItemTouchHelperCallback(shoppingListItemAdapter)
-        itemTouchHelper = ItemTouchHelper(callback)
-        itemTouchHelper?.attachToRecyclerView(binding.viewShoppingListRV)
     }
 
     private fun observeViewModelAndSetupUI() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                // Убрал вложенный launch, collectLatest в ViewModel должен справляться
                 viewModel.uiState.collect { uiState ->
                     if (uiState.listNotFound) {
                         Toast.makeText(requireContext(), "Список не найден", Toast.LENGTH_LONG).show()
                         findNavController().popBackStack()
                         return@collect
                     }
-
                     uiState.currentList?.let { list ->
                         if (binding.listNameET.text.toString() != list.shoppingListName && !binding.listNameET.hasFocus()) {
                             binding.listNameET.setText(list.shoppingListName)
@@ -107,12 +93,8 @@ class ViewShoppingListFragment : Fragment() {
                         binding.FinishListFAB.isEnabled = !list.isCompleted
                     }
                     shoppingListItemAdapter.submitList(uiState.itemsInList)
-
-                    // Показать диалог добавления деталей, если товар для добавления загружен
-                    // И если диалог еще не показан (чтобы избежать повторного показа при пересоздании View)
                     if (uiState.productToAdd != null && childFragmentManager.findFragmentByTag("addItemDetailsDialog") == null) {
                         showAddItemDetailsDialog(uiState.productToAdd)
-                        // Не очищаем productToAdd здесь, ViewModel сделает это после подтверждения добавления
                     }
                 }
             }
@@ -125,11 +107,9 @@ class ViewShoppingListFragment : Fragment() {
                 viewModel.updateListName(binding.listNameET.text.toString())
             }
         }
-
         binding.toOrFromFavoriteFAB.setOnClickListener { viewModel.toggleFavoriteStatus() }
         binding.FinishListFAB.setOnClickListener { viewModel.completeShoppingList() }
         binding.deleteListFAB.setOnClickListener { showDeleteListConfirmationDialog() }
-
         binding.addProductToListFAB.setOnClickListener {
             val currentListId = viewModel.uiState.value.currentList?.shoppingListId ?: return@setOnClickListener
             val action = ViewShoppingListFragmentDirections.actionViewShoppingListFragmentToProductsFragment(currentListId, true)
@@ -140,24 +120,22 @@ class ViewShoppingListFragment : Fragment() {
     private fun showAddItemDetailsDialog(product: Product) {
         val dialogBinding = DialogAddItemDetailsBinding.inflate(LayoutInflater.from(requireContext()))
         val dialogView = dialogBinding.root
-
         dialogBinding.addItemProductNameTV.text = product.productName
         dialogBinding.addItemPriceET.setText(product.defaultPrice?.toString() ?: "")
         dialogBinding.addItemQuantityET.setText("1")
 
         val dialog = MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Добавить ${product.productName}")
             .setView(dialogView)
             .setCancelable(false)
             .create()
-
         dialogBinding.addItemDetalsButton.setOnClickListener {
             val quantity = dialogBinding.addItemQuantityET.text.toString().toDoubleOrNull() ?: 1.0
             val price = dialogBinding.addItemPriceET.text.toString().toDoubleOrNull()
             viewModel.confirmAddProductToList(quantity, price, product.defaultUnit)
-            dialog.dismiss()
             viewModel.clearProductToAdd()
+            dialog.dismiss()
         }
-
         dialog.show()
     }
 
@@ -165,18 +143,10 @@ class ViewShoppingListFragment : Fragment() {
         val dialogBinding = DialogConfirmDeleteBinding.inflate(LayoutInflater.from(requireContext()))
         dialogBinding.delDialLableTV.text = getString(R.string.confirm_delete_title)
         dialogBinding.delDialInfoTV.text = getString(R.string.confirm_delete_list_item_message, item.productName)
-
         MaterialAlertDialogBuilder(requireContext())
-            .setView(dialogBinding.root)
-            .setCancelable(false)
-            .create().apply {
-                dialogBinding.delYesButton.setOnClickListener {
-                    viewModel.deleteShoppingListItem(item)
-                    this.dismiss()
-                }
-                dialogBinding.delNoButton.setOnClickListener {
-                    this.dismiss()
-                }
+            .setView(dialogBinding.root).setCancelable(false).create().apply {
+                dialogBinding.delYesButton.setOnClickListener { viewModel.deleteShoppingListItem(item); this.dismiss() }
+                dialogBinding.delNoButton.setOnClickListener { this.dismiss() }
             }.show()
     }
 
@@ -185,27 +155,16 @@ class ViewShoppingListFragment : Fragment() {
             val dialogBinding = DialogConfirmDeleteBinding.inflate(LayoutInflater.from(requireContext()))
             dialogBinding.delDialLableTV.text = getString(R.string.confirm_delete_title)
             dialogBinding.delDialInfoTV.text = getString(R.string.confirm_delete_shopping_list_message, list.shoppingListName)
-
             MaterialAlertDialogBuilder(requireContext())
-                .setView(dialogBinding.root)
-                .setCancelable(false)
-                .create().apply {
-                    dialogBinding.delYesButton.setOnClickListener {
-                        viewModel.deleteFullShoppingList {
-                            findNavController().popBackStack()
-                        }
-                        this.dismiss()
-                    }
-                    dialogBinding.delNoButton.setOnClickListener {
-                        this.dismiss()
-                    }
+                .setView(dialogBinding.root).setCancelable(false).create().apply {
+                    dialogBinding.delYesButton.setOnClickListener { viewModel.deleteFullShoppingList { findNavController().popBackStack() }; this.dismiss() }
+                    dialogBinding.delNoButton.setOnClickListener { this.dismiss() }
                 }.show()
         }
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
-        itemTouchHelper?.attachToRecyclerView(null)
         binding.viewShoppingListRV.adapter = null
         _binding = null
     }

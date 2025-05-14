@@ -1,5 +1,6 @@
 package com.shah.carty
 
+import android.util.Log
 import com.shah.carty.Department
 import com.shah.carty.CartyRepository
 import androidx.lifecycle.ViewModel
@@ -40,8 +41,14 @@ class DepartmentsViewModel(private val repository: CartyRepository) : ViewModel(
     }
 
     fun deleteDepartment(department: Department) {
+        Log.d("DepartmentsVM", "Deleting department in ViewModel: ${department.departmentName}") // ЛОГ
         viewModelScope.launch {
-            repository.deleteDepartment(department)
+            try { // Добавим try-catch для отладки
+                repository.deleteDepartment(department)
+                Log.d("DepartmentsVM", "Department deletion initiated in repository for: ${department.departmentName}")
+            } catch (e: Exception) {
+                Log.e("DepartmentsVM", "Error calling repository.deleteDepartment", e)
+            }
         }
     }
 }

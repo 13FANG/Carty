@@ -50,8 +50,13 @@ class EditProductFragment : Fragment() {
         setupInputListeners()
 
         binding.saveProductButton.setOnClickListener {
-            viewModel.saveProduct()
-            findNavController().popBackStack()
+            binding.saveProductButton.isEnabled = false
+
+            viewModel.saveProduct {
+                if (isAdded && view != null) {
+                    findNavController().popBackStack()
+                }
+            }
         }
 
         binding.toNewDepartmentLinkTV.setOnClickListener {

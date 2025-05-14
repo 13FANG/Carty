@@ -1,5 +1,6 @@
 package com.shah.carty
 
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -130,9 +131,12 @@ class EditProductViewModel(
         }
     }
 
-    fun saveProduct() {
+    fun saveProduct(onSaveFinished: () -> Unit) {
         val current = _uiState.value
-        if (!current.saveButtonEnabled || current.productName.isBlank()) return
+        if (!current.saveButtonEnabled || current.productName.isBlank()) {
+            onSaveFinished()
+            return
+        }
 
         viewModelScope.launch {
             val priceDouble = current.defaultPrice.toDoubleOrNull()
@@ -144,10 +148,16 @@ class EditProductViewModel(
                 defaultPrice = priceDouble,
                 ownerId = ""
             )
-            if (current.isEditing) {
-                repository.updateProduct(productToSave)
-            } else {
-                repository.addProduct(productToSave)
+            try {
+                if (current.isEditing) {
+                    repository.updateProduct(productToSave)
+                } else {
+                    repository.addProduct(productToSave)
+                }
+            } catch (e: Exception) {
+                Log.e("EditProductVM", "Error saving product", e)
+            } finally {
+                onSaveFinished()
             }
         }
     }

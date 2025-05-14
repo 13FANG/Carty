@@ -7,35 +7,38 @@ import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.shah.carty.databinding.ItemDepartmentBinding
 
 class DepartmentAdapter(
     private val onItemClicked: (Department) -> Unit,
-    private val onItemLongClicked: (Department) -> Unit
+    private val onDeleteButtonClicked: (Department) -> Unit
 ) : ListAdapter<Department, DepartmentAdapter.DepartmentViewHolder>(DepartmentDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DepartmentViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_department, parent, false)
-        return DepartmentViewHolder(view)
+        val binding = ItemDepartmentBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        return DepartmentViewHolder(binding)
     }
 
     override fun onBindViewHolder(holder: DepartmentViewHolder, position: Int) {
         val department = getItem(position)
-        holder.bind(department)
-        holder.itemView.setOnClickListener {
-            onItemClicked(department)
-        }
-        holder.itemView.setOnLongClickListener {
-            onItemLongClicked(department)
-            true
-        }
+        holder.bind(department, onItemClicked, onDeleteButtonClicked)
     }
 
-    class DepartmentViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val departmentNameTextView: TextView = itemView.findViewById(R.id.departmentNameTV)
+    class DepartmentViewHolder(private val binding: ItemDepartmentBinding) : RecyclerView.ViewHolder(binding.root) {
+        fun bind(
+            department: Department,
+            onItemClickedCallback: (Department) -> Unit,
+            onDeleteButtonClickedCallback: (Department) -> Unit
+        ) {
+            binding.departmentNameTV.text = department.departmentName
 
-        fun bind(department: Department) {
-            departmentNameTextView.text = department.departmentName
+            itemView.setOnClickListener {
+                onItemClickedCallback(department)
+            }
+
+            binding.delItemProdictImageButton.setOnClickListener {
+                onDeleteButtonClickedCallback(department)
+            }
         }
     }
 }

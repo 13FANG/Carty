@@ -5,7 +5,7 @@
     <string name="add_department_title">Добавление отдела</string>
     <string name="edit_department_title">Редактирование отдела</string>
     <string name="confirm_delete_product_message">Вы уверены, что хотите удалить товар \"%1$s\"? Он также будет удален из всех активных списков покупок.</string>
-    <string name="edit_product_title">Редактирование товара</string>
+    <string name="edit_product_title">Изменение товара</string>
     <string name="add_product_title">Новый товар</string>
     <string name="no_department_selected">Без отдела</string>
     <string name="hint_new_list_name">Название списка</string>

@@ -3,54 +3,55 @@ package com.shah.carty
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverter
+import com.google.firebase.firestore.Exclude
 
 @Entity
 data class Department(
     @PrimaryKey(autoGenerate = true) val departmentId: Long = 0L,
-    val departmentName: String,
-    val ownerId: String,
-    val firestoreId: String = ""
+    val departmentName: String = "",
+    val ownerId: String = "",
+    @get:Exclude var firestoreId: String = "" // ДОБАВЛЕНО @get:Exclude, var для обновления
 )
 
 @Entity
 data class Product(
     @PrimaryKey(autoGenerate = true) val productId: Long = 0L,
-    val productName: String,
-    val departmentId: Long?,
-    val defaultUnit: ProductUnit,
-    val defaultPrice: Double?,
-    val ownerId: String,
-    val firestoreId: String = ""
+    val productName: String = "",
+    val departmentId: Long? = null,
+    val defaultUnit: ProductUnit = ProductUnit.PIECE,
+    val defaultPrice: Double? = null,
+    val ownerId: String = "",
+    @get:Exclude var firestoreId: String = "" // ДОБАВЛЕНО @get:Exclude, var
 )
 
 @Entity
 data class ShoppingList(
     @PrimaryKey(autoGenerate = true) val shoppingListId: Long = 0L,
-    val shoppingListName: String,
-    val createdAt: Long,
-    val updatedAt: Long,
+    val shoppingListName: String = "",
+    val createdAt: Long = 0L,
+    val updatedAt: Long = 0L,
     val isFavorite: Boolean = false,
     val isCompleted: Boolean = false,
-    val departmentOrder: List<Long>,
-    val manualSortIndex: Int,
-    val ownerId: String,
-    val firestoreId: String = ""
+    val departmentOrder: List<Long> = emptyList(),
+    val manualSortIndex: Int = 0,
+    val ownerId: String = "",
+    @get:Exclude var firestoreId: String = "" // ДОБАВЛЕНО @get:Exclude, var
 )
 
 @Entity
 data class ShoppingListItem(
     @PrimaryKey(autoGenerate = true) val shoppingListItemId: Long = 0L,
-    val shoppingListId: Long,
-    val productId: Long,
-    val productName: String,
-    val quantity: Double,
-    val unit: ProductUnit,
-    val price: Double?,
+    val shoppingListId: Long = 0L,
+    val productId: Long = 0L,
+    val productName: String = "",
+    val quantity: Double = 0.0,
+    val unit: ProductUnit = ProductUnit.PIECE,
+    val price: Double? = null,
     val isBought: Boolean = false,
-    val departmentIdAtPurchase: Long?,
-    val manualSortOrder: Int,
-    val ownerId: String,
-    val firestoreId: String = ""
+    val departmentIdAtPurchase: Long? = null,
+    val manualSortOrder: Int = 0,
+    val ownerId: String = "",
+    @get:Exclude var firestoreId: String = "" // ДОБАВЛЕНО @get:Exclude, var
 )
 
 enum class ProductUnit {

@@ -2,4 +2,8 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="primary_text_color">#3F51B5</color>
+    <color name="secondary_text_color">#969696</color>
+    <color name="card_stroke_active_color">#3F51B5</color>
+    <color name="card_stroke_bought_color">#969696</color>
 </resources>

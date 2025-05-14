@@ -1,5 +1,29 @@
 <resources>
     <string name="app_name">Carty</string>
-<!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="confirm_delete_title">Подтверждение</string>
+    <string name="confirm_delete_department_message">Вы уверены, что хотите удалить отдел \"%1$s\"? При удалении данного отдела у всех товаров, у которых он указан, отдел поменяется на \"без отдела\".</string>
+    <string name="add_department_title">Добавление отдела</string>
+    <string name="edit_department_title">Редактирование отдела</string>
+    <string name="confirm_delete_product_message">Вы уверены, что хотите удалить товар \"%1$s\"? Он также будет удален из всех активных списков покупок.</string>
+    <string name="edit_product_title">Редактирование товара</string>
+    <string name="add_product_title">Новый товар</string>
+    <string name="no_department_selected">Без отдела</string>
+    <string name="hint_new_list_name">Название списка</string>
+    <string name="title_create_new_list">Создать новый список</string>
+    <string name="create_button_text">Создать</string>
+    <string name="cancel_button_text">Отмена</string>
+    <string name="confirm_delete_list_item_message">Удалить товар \"%1$s\" из этого списка?</string>
+    <string name="confirm_delete_shopping_list_message">Вы уверены, что хотите удалить список \"%1$s\"? Это действие необратимо.</string>
+    <string name="password_recovery_title">Восстановление пароля</string>
+    <string name="restore_data_title">Восстановление данных</string>
+    <string name="restore_data_message">На сервере найдены ваши данные. Хотите загрузить их? Это перезапишет текущие локальные данные.</string>
+    <string name="restore_data_positive_button">Загрузить</string>
+    <string name="restore_data_negative_button">Начать с чистого листа</string>
+    <string name="password_recovery_success_message">Письмо для восстановления отправлено.</string>
+    <string name="unit_piece">Штука</string>
+    <string name="unit_kilogram">Килограмм</string>
+    <string name="unit_gram">Грамм</string>
+    <string name="unit_liter">Литр</string>
+    <string name="unit_milliliter">Миллилитр</string>
+    <string name="unit_package">Упаковка</string>
 </resources>

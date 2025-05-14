@@ -1,9 +1,5 @@
 package com.shah.carty
 
-import com.shah.carty.Department
-import com.shah.carty.Product
-import com.shah.carty.ShoppingList
-import com.shah.carty.ShoppingListItem
 import kotlinx.coroutines.flow.Flow
 
 interface CartyRepository {
@@ -13,6 +9,7 @@ interface CartyRepository {
     suspend fun deleteDepartment(department: Department)
     fun getAllDepartmentsList(): Flow<List<Department>>
     fun getDepartmentById (departmentIdForSearch: Long): Flow<Department?>
+
     // Product
     suspend fun addProduct(product: Product)
     suspend fun updateProduct(product: Product)
@@ -21,12 +18,14 @@ interface CartyRepository {
     fun getProductById(productIdForSearch: Long): Flow<Product?>
     fun getProductByName(productNameForSearch: String): Flow<List<Product>>
     suspend fun resetDepartmentId(departmentIdToDelete: Long)
+
     //Shopping List
-    suspend fun addShoppingList(shoppingList: ShoppingList)
+    suspend fun addShoppingList(shoppingList: ShoppingList): Long
     suspend fun updateShoppingList(shoppingList: ShoppingList)
     suspend fun deleteShoppingList(shoppingList: ShoppingList)
     fun getActiveAndFavoriteLists(): Flow<List<ShoppingList>>
     fun getShoppingListById (shoppingListIdForSearch: Long): Flow<ShoppingList?>
+
     //Shopping List Item
     suspend fun addShoppingListItem(shoppingListItem: ShoppingListItem)
     suspend fun updateShoppingListItem(shoppingListItem: ShoppingListItem)
@@ -35,4 +34,12 @@ interface CartyRepository {
     fun getShoppingListItemById (shoppingListItemIdForSearch: Long): Flow<ShoppingListItem?>
     suspend fun deleteShoppingListItemsById(shoppingListIdForDel: Long)
     suspend fun deleteShoppingListItemsByProductId(productIdForDel: Long)
+
+    // Auth and Sync related
+    fun isUserLoggedIn(): Boolean
+    suspend fun checkIfUserHasDataOnServer(): Boolean
+    suspend fun fetchAndOverwriteLocalData()
+    suspend fun clearLocalGuestData()
+    suspend fun clearLocalUserData(userId: String)
+    suspend fun clearLocalUserDataOnSignOut()
 }

@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/loginFragment">
+
+    <fragment
+        android:id="@+id/departmentsFragment"
+        android:name="com.shah.carty.DepartmentsFragment"
+        android:label="Справочник отделов"
+        tools:layout="@layout/fragment_departments">
+        <action
+            android:id="@+id/action_departmentsFragment_to_editDepartmentFragment"
+            app:destination="@id/editDepartmentFragment" />
+    </fragment>
+
+
+    <fragment
+        android:id="@+id/productsFragment"
+        android:name="com.shah.carty.ProductsFragment"
+        android:label="Справочник товаров"
+        tools:layout="@layout/fragment_products">
+        <argument
+            android:name="shoppingListIdForProductSelection"
+            app:argType="long"
+            android:defaultValue="-1L" />
+        <argument
+            android:name="isSelectionMode"
+            app:argType="boolean"
+            android:defaultValue="false" />
+        <action
+            android:id="@+id/action_productsFragment_to_editProductFragment"
+            app:destination="@id/editProductFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/viewShoppingListFragment"
+        android:name="com.shah.carty.ViewShoppingListFragment"
+        android:label="Просмотр списка"
+        tools:layout="@layout/fragment_view_shopping_list">
+        <argument
+            android:name="shoppingListId"
+            app:argType="long" />
+        <action
+            android:id="@+id/action_viewShoppingListFragment_to_productsFragment"
+            app:destination="@id/productsFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/loginFragment"
+        android:name="com.shah.carty.LoginFragment"
+        android:label="Вход"
+        tools:layout="@layout/fragment_login">
+        <action
+            android:id="@+id/action_loginFragment_to_registerFragment"
+            app:destination="@id/registerFragment" />
+        <action
+            android:id="@+id/action_loginFragment_to_shoppingListsFragment"
+            app:destination="@id/shoppingListsFragment"
+            app:popUpTo="@id/nav_graph"
+            app:popUpToInclusive="true" />
+    </fragment>
+    <fragment
+        android:id="@+id/registerFragment"
+        android:name="com.shah.carty.RegisterFragment"
+        android:label="Регистрация"
+        tools:layout="@layout/fragment_register">
+        <action
+            android:id="@+id/action_registerFragment_to_shoppingListsFragment"
+            app:destination="@id/shoppingListsFragment"
+            app:popUpTo="@id/nav_graph"
+            app:popUpToInclusive="true" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/shoppingListsFragment"
+        android:name="com.shah.carty.ShoppingListsFragment"
+        android:label="Мои списки"
+        tools:layout="@layout/fragment_shopping_lists">
+        <action
+            android:id="@+id/action_shoppingListsFragment_to_viewShoppingListFragment"
+            app:destination="@id/viewShoppingListFragment" />
+        <action
+            android:id="@+id/action_shoppingListsFragment_to_productsFragment"
+            app:destination="@id/productsFragment" />
+        <action
+            android:id="@+id/action_shoppingListsFragment_to_departmentsFragment"
+            app:destination="@id/departmentsFragment" />
+        <action
+            android:id="@+id/action_shoppingListsFragment_to_statisticsMainFragment"
+            app:destination="@id/statisticsMainFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/editProductFragment"
+        android:name="com.shah.carty.EditProductFragment"
+        android:label="Товар"
+        tools:layout="@layout/fragment_edit_product">
+        <argument
+            android:name="productId"
+            app:argType="long"
+            android:defaultValue="0L" />
+        <action
+            android:id="@+id/action_editProductFragment_to_editDepartmentFragment"
+            app:destination="@id/editDepartmentFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/editDepartmentFragment"
+        android:name="com.shah.carty.EditDepartmentFragment"
+        android:label="Отдел"
+        tools:layout="@layout/fragment_edit_department">
+        <argument
+            android:name="departmentId"
+            app:argType="long"
+            android:defaultValue="0L" />
+    </fragment>
+
+<fragment
+android:id="@+id/statisticsMainFragment"
+android:name="com.shah.carty.StatisticsMainFragment"
+android:label="Статистика"
+tools:layout="@layout/fragment_statistics_main" />
+<fragment
+android:id="@+id/statisticsTopProductsFragment"
+android:name="com.shah.carty.StatisticsTopProductsFragment"
+android:label="Топ товаров"
+tools:layout="@layout/fragment_statistics_top_products" />
+<fragment
+android:id="@+id/statisticsAvgProductPurchasesFragment"
+android:name="com.shah.carty.StatisticsAvgProductPurchasesFragment"
+android:label="Средние покупки товара"
+tools:layout="@layout/fragment_statistics_avg_product_purchases" />
+<fragment
+android:id="@+id/statisticsSpendingDynamicsFragment"
+android:name="com.shah.carty.StatisticsSpendingDynamicsFragment"
+android:label="Динамика трат"
+tools:layout="@layout/fragment_statistics_spending_dynamics" />
+<fragment
+android:id="@+id/statisticsDepartmentSpendingFragment"
+android:name="com.shah.carty.StatisticsDepartmentSpendingFragment"
+android:label="Траты по отделам"
+tools:layout="@layout/fragment_statistics_department_spending" />
+
+    </navigation>

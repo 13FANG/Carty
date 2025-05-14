@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -105,6 +106,33 @@
                 app:layout_constraintStart_toStartOf="@+id/logInButton"
                 app:layout_constraintTop_toBottomOf="@+id/linkToRegistrationTV" />
 
+            <TextView
+                android:id="@+id/guestModeLinkTV"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:clickable="true"
+                android:fontFamily="@font/ropa_sans_sc_ptt"
+                android:text="Продолжить как гость"
+                android:textAlignment="center"
+                android:textColor="#3F50B4"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toEndOf="@+id/logInButton"
+                app:layout_constraintStart_toStartOf="@+id/logInButton"
+                app:layout_constraintTop_toBottomOf="@+id/passwordRecoveryLinkTV" />
+
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>
+
+    <ProgressBar
+        android:id="@+id/loginProgressBar"
+        style="?android:attr/progressBarStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="@+id/loginLable"
+        app:layout_constraintStart_toStartOf="@+id/loginLable"
+        app:layout_constraintTop_toBottomOf="@+id/loginLable" />
 </androidx.constraintlayout.widget.ConstraintLayout>

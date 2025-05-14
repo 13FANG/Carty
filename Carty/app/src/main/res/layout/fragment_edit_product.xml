@@ -9,7 +9,7 @@
         android:id="@+id/addProductLable"
         android:layout_width="300dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="128dp"
+        android:layout_marginTop="112dp"
         android:fontFamily="@font/uncage"
         android:text="новый товар"
         android:textAlignment="center"
@@ -30,6 +30,58 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
+            <EditText
+                android:id="@+id/productNameET"
+                android:layout_width="300dp"
+                android:layout_height="48dp"
+                android:layout_marginTop="56dp"
+                android:ems="10"
+                android:fontFamily="@font/pf_highway_sans_pro"
+                android:hint="Название товара"
+                android:inputType="textCapSentences"
+                android:textSize="24sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <Spinner
+                android:id="@+id/departmentSpinner"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:fontFamily="@font/pf_highway_sans_pro"
+                android:minHeight="48dp"
+                android:textSize="24sp"
+                app:layout_constraintEnd_toEndOf="@+id/productNameET"
+                app:layout_constraintStart_toStartOf="@+id/productNameET"
+                app:layout_constraintTop_toBottomOf="@+id/productNameET" />
+
+            <EditText
+                android:id="@+id/priceET"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_marginTop="16dp"
+                android:ems="10"
+                android:fontFamily="@font/pf_highway_sans_pro"
+                android:hint="Стандартная цена"
+                android:inputType="number"
+                android:textSize="24sp"
+                app:layout_constraintEnd_toEndOf="@+id/departmentSpinner"
+                app:layout_constraintStart_toStartOf="@+id/departmentSpinner"
+                app:layout_constraintTop_toBottomOf="@+id/departmentSpinner" />
+
+            <Spinner
+                android:id="@+id/unitSpinner"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:fontFamily="@font/pf_highway_sans_pro"
+                android:minHeight="48dp"
+                android:textSize="24sp"
+                app:layout_constraintEnd_toEndOf="@+id/priceET"
+                app:layout_constraintStart_toStartOf="@+id/priceET"
+                app:layout_constraintTop_toBottomOf="@+id/priceET" />
+
             <Button
                 android:id="@+id/saveProductButton"
                 style="@style/Widget.Material3.Button"
@@ -45,57 +97,21 @@
                 app:layout_constraintStart_toStartOf="@+id/unitSpinner"
                 app:layout_constraintTop_toBottomOf="@+id/unitSpinner" />
 
-            <EditText
-                android:id="@+id/productNameET"
-                android:layout_width="300dp"
-                android:layout_height="42dp"
-                android:layout_marginTop="72dp"
-                android:ems="10"
-                android:fontFamily="@font/pf_highway_sans_pro"
-                android:hint="Название товара"
-                android:inputType="textCapSentences"
-                android:textSize="24sp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <EditText
-                android:id="@+id/priceET"
-                android:layout_width="0dp"
-                android:layout_height="42dp"
-                android:layout_marginTop="16dp"
-                android:ems="10"
-                android:fontFamily="@font/pf_highway_sans_pro"
-                android:hint="Стандартная цена"
-                android:inputType="number"
-                android:textSize="24sp"
-                app:layout_constraintEnd_toEndOf="@+id/departmentSpinner"
-                app:layout_constraintStart_toStartOf="@+id/departmentSpinner"
-                app:layout_constraintTop_toBottomOf="@+id/departmentSpinner" />
-
-            <Spinner
-                android:id="@+id/departmentSpinner"
-                android:layout_width="0dp"
+            <TextView
+                android:id="@+id/toNewDepartmentLinkTV"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:minHeight="42dp"
                 android:layout_marginTop="16dp"
-                android:fontFamily="@font/pf_highway_sans_pro"
-                android:textSize="24sp"
-                app:layout_constraintEnd_toEndOf="@+id/productNameET"
-                app:layout_constraintStart_toStartOf="@+id/productNameET"
-                app:layout_constraintTop_toBottomOf="@+id/productNameET" />
-
-            <Spinner
-                android:id="@+id/unitSpinner"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:minHeight="42dp"
-                android:layout_marginTop="16dp"
-                android:fontFamily="@font/pf_highway_sans_pro"
-                android:textSize="24sp"
-                app:layout_constraintEnd_toEndOf="@+id/priceET"
-                app:layout_constraintStart_toStartOf="@+id/priceET"
-                app:layout_constraintTop_toBottomOf="@+id/priceET" />
+                android:clickable="true"
+                android:fontFamily="@font/ropa_sans_sc_ptt"
+                android:text="Создать новый отдлел"
+                android:textAlignment="center"
+                android:textColor="#3F50B4"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toEndOf="@+id/saveProductButton"
+                app:layout_constraintStart_toStartOf="@+id/saveProductButton"
+                app:layout_constraintTop_toBottomOf="@+id/saveProductButton" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>

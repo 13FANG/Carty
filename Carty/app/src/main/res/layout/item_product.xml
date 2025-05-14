@@ -28,7 +28,7 @@
             app:tint="#F44336" />
 
         <TextView
-            android:id="@+id/stat1PositionTV"
+            android:id="@+id/productNameLableTV"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="@font/pf_highway_sans_pro"
@@ -52,8 +52,8 @@
             android:textSize="30sp"
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/stat1PositionTV"
-            app:layout_constraintTop_toTopOf="@+id/stat1PositionTV" />
+            app:layout_constraintStart_toEndOf="@+id/productNameLableTV"
+            app:layout_constraintTop_toTopOf="@+id/productNameLableTV" />
 
         <TextView
             android:id="@+id/departmentLableTV"
@@ -67,7 +67,7 @@
             android:textSize="24sp"
             android:textStyle="bold"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/stat1PositionTV" />
+            app:layout_constraintTop_toBottomOf="@+id/productNameLableTV" />
 
         <TextView
             android:id="@+id/departmentNameTV"
@@ -99,7 +99,7 @@
             app:layout_constraintTop_toBottomOf="@+id/departmentLableTV" />
 
         <TextView
-            android:id="@+id/stat1ProductNameTV"
+            android:id="@+id/unitProductItemTV"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="4dp"

@@ -33,12 +33,13 @@
             <EditText
                 android:id="@+id/departmentNameET"
                 android:layout_width="300dp"
-                android:layout_height="wrap_content"
+                android:layout_height="48dp"
                 android:layout_marginTop="148dp"
                 android:ems="10"
                 android:fontFamily="@font/pf_highway_sans_pro"
                 android:hint="Название отдела"
                 android:inputType="textCapSentences"
+                android:textSize="24sp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />

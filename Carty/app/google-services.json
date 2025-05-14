@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "693755613965",
+    "project_id": "carty-7fcd8",
+    "storage_bucket": "carty-7fcd8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:693755613965:android:77e2d206457c9ceac65644",
+        "android_client_info": {
+          "package_name": "com.shah.carty"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDeu_-Hj67sAUSaaNPwKusVayMvSxq4dCc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -10,7 +10,7 @@ data class Department(
     @PrimaryKey(autoGenerate = true) val departmentId: Long = 0L,
     val departmentName: String = "",
     val ownerId: String = "",
-    @get:Exclude var firestoreId: String = "" // ДОБАВЛЕНО @get:Exclude, var для обновления
+    @get:Exclude var firestoreId: String = ""
 )
 
 @Entity
@@ -21,7 +21,7 @@ data class Product(
     val defaultUnit: ProductUnit = ProductUnit.PIECE,
     val defaultPrice: Double? = null,
     val ownerId: String = "",
-    @get:Exclude var firestoreId: String = "" // ДОБАВЛЕНО @get:Exclude, var
+    @get:Exclude var firestoreId: String = ""
 )
 
 @Entity
@@ -35,7 +35,7 @@ data class ShoppingList(
     val departmentOrder: List<Long> = emptyList(),
     val manualSortIndex: Int = 0,
     val ownerId: String = "",
-    @get:Exclude var firestoreId: String = "" // ДОБАВЛЕНО @get:Exclude, var
+    @get:Exclude var firestoreId: String = ""
 )
 
 @Entity
@@ -51,7 +51,7 @@ data class ShoppingListItem(
     val departmentIdAtPurchase: Long? = null,
     val manualSortOrder: Int = 0,
     val ownerId: String = "",
-    @get:Exclude var firestoreId: String = "" // ДОБАВЛЕНО @get:Exclude, var
+    @get:Exclude var firestoreId: String = ""
 )
 
 enum class ProductUnit {

@@ -35,7 +35,7 @@
             <EditText
                 android:id="@+id/regEmailET"
                 android:layout_width="300dp"
-                android:layout_height="42dp"
+                android:layout_height="48dp"
                 android:layout_marginTop="72dp"
                 android:ems="10"
                 android:fontFamily="@font/pf_highway_sans_pro"
@@ -49,7 +49,7 @@
             <EditText
                 android:id="@+id/regPasswordET"
                 android:layout_width="0dp"
-                android:layout_height="42dp"
+                android:layout_height="48dp"
                 android:layout_marginTop="16dp"
                 android:ems="10"
                 android:fontFamily="@font/pf_highway_sans_pro"
@@ -63,7 +63,7 @@
             <EditText
                 android:id="@+id/regPasswordConfirmET"
                 android:layout_width="0dp"
-                android:layout_height="42dp"
+                android:layout_height="48dp"
                 android:layout_marginTop="16dp"
                 android:ems="10"
                 android:fontFamily="@font/pf_highway_sans_pro"

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -32,7 +33,12 @@ class ShoppingListsViewModel(
             val currentTime = System.currentTimeMillis()
 
             val currentDisplayedLists = uiState.value.activeLists
-            val nextSortIndex = (currentDisplayedLists.minOfOrNull { list -> list.manualSortIndex } ?: 1) - 1
+            val nextSortIndex = if (currentDisplayedLists.isEmpty()) {
+                0
+            } else {
+                (currentDisplayedLists.minOfOrNull { it.manualSortIndex } ?: 0) - 1
+            }
+
 
             val defaultName = "Новый список"
             val newList = ShoppingList(
@@ -46,41 +52,37 @@ class ShoppingListsViewModel(
         }
     }
 
-    fun updateShoppingListsOrder(orderedLists: List<ShoppingList>) {
+    fun updateShoppingListsOrder(orderedListsFromAdapter: List<ShoppingList>) {
         viewModelScope.launch {
-            val listsToUpdate = mutableListOf<ShoppingList>()
-            val currentSnapshot = uiState.value.activeLists
+            val originalListsFromStateById = uiState.value.activeLists.associateBy { it.shoppingListId }
+            var orderActuallyChanged = false
 
-            orderedLists.forEachIndexed { index, newListOrderVersion ->
-                val oldVersionInState = currentSnapshot.find { it.shoppingListId == newListOrderVersion.shoppingListId }
-
-                if (oldVersionInState != null) {
-                    if (oldVersionInState.manualSortIndex != index ||
-                        currentSnapshot.getOrNull(index)?.shoppingListId != newListOrderVersion.shoppingListId) {
-                        listsToUpdate.add(newListOrderVersion.copy(manualSortIndex = index))
+            val listsToPersist = orderedListsFromAdapter.mapIndexedNotNull { newIndex, listFromAdapter ->
+                val originalList = originalListsFromStateById[listFromAdapter.shoppingListId]
+                if (originalList != null) {
+                    if (originalList.manualSortIndex != newIndex) {
+                        orderActuallyChanged = true
+                        listFromAdapter.copy(manualSortIndex = newIndex)
+                    } else {
+                        listFromAdapter
                     }
                 } else {
-                    listsToUpdate.add(newListOrderVersion.copy(manualSortIndex = index))
+                    orderActuallyChanged = true
+                    listFromAdapter.copy(manualSortIndex = newIndex)
+                }
+            }
+            if (orderedListsFromAdapter.size != uiState.value.activeLists.size) {
+                orderActuallyChanged = true
+            } else {
+                val idsFromAdapter = orderedListsFromAdapter.map { it.shoppingListId }.toSet()
+                val idsFromState = uiState.value.activeLists.map { it.shoppingListId }.toSet()
+                if (idsFromAdapter != idsFromState) {
+                    orderActuallyChanged = true
                 }
             }
 
-            if (listsToUpdate.isEmpty() && currentSnapshot.size == orderedLists.size) {
-                var orderChanged = false
-                for(i in orderedLists.indices) {
-                    if(currentSnapshot.getOrNull(i)?.shoppingListId != orderedLists.getOrNull(i)?.shoppingListId) {
-                        orderChanged = true
-                        break
-                    }
-                }
-                if(orderChanged) {
-                    orderedLists.forEachIndexed{ index, list ->
-                        listsToUpdate.add(list.copy(manualSortIndex = index))
-                    }
-                }
-            }
-
-            if (listsToUpdate.isNotEmpty()) {
-                listsToUpdate.forEach { repository.updateShoppingList(it) }
+            if (orderActuallyChanged) {
+                repository.updateShoppingLists(listsToPersist)
             }
         }
     }

@@ -1,5 +1,6 @@
 package com.shah.carty
 
+import androidx.room.withTransaction
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.toObjects
@@ -12,7 +13,8 @@ class OfflineCartyRepository(
     private val productDao: ProductDao,
     private val shoppingListDao: ShoppingListDao,
     private val shoppingListItemDao: ShoppingListItemDao,
-    private val firebaseAuth: FirebaseAuth
+    private val firebaseAuth: FirebaseAuth,
+    private val database: CartyDatabase
 ) : CartyRepository {
 
     private val firestore = FirebaseFirestore.getInstance()
@@ -220,6 +222,66 @@ class OfflineCartyRepository(
             if (!isUserGuest()) shoppingListDao.updateShoppingList(savedObject.copy(firestoreId = newFsId))
         }
     }
+
+    override suspend fun updateShoppingLists(shoppingLists: List<ShoppingList>) {
+        val userId = getCurrentUserId()
+
+        database.withTransaction {
+            shoppingLists.forEach { list ->
+                if (list.ownerId == userId || (isUserGuest() && list.ownerId == CartyApplication.GUEST_USER_ID)) {
+                    val finalListForRoom = if (isUserGuest() && list.ownerId != CartyApplication.GUEST_USER_ID) {
+                        list.copy(ownerId = CartyApplication.GUEST_USER_ID)
+                    } else if (!isUserGuest() && list.ownerId == CartyApplication.GUEST_USER_ID) {
+                        list.copy(ownerId = userId)
+                    } else {
+                        list
+                    }
+                    shoppingListDao.updateShoppingList(finalListForRoom)
+                }
+            }
+        }
+
+        if (!isUserGuest()) {
+            val batch = firestore.batch()
+            val firestoreIdsToUpdateInRoom = mutableMapOf<Long, String>()
+
+            shoppingLists.forEach { listFromApp ->
+                val listForFirestore = if (listFromApp.ownerId == CartyApplication.GUEST_USER_ID) {
+                    listFromApp.copy(ownerId = userId)
+                } else {
+                    listFromApp
+                }
+
+                if (listForFirestore.ownerId == userId) {
+                    if (listForFirestore.firestoreId.isNotBlank()) {
+                        val docRef = firestore.collection("shoppingLists").document(listForFirestore.firestoreId)
+                        batch.set(docRef, listForFirestore)
+                    } else {
+                        val newDocRef = firestore.collection("shoppingLists").document()
+                        batch.set(newDocRef, listForFirestore.copy(firestoreId = newDocRef.id))
+                        firestoreIdsToUpdateInRoom[listForFirestore.shoppingListId] = newDocRef.id
+                    }
+                }
+            }
+            if (firestoreIdsToUpdateInRoom.isNotEmpty() || shoppingLists.any { it.firestoreId.isNotBlank() && it.ownerId == userId }) {
+                try {
+                    batch.commit().await()
+                    if (firestoreIdsToUpdateInRoom.isNotEmpty()) {
+                        database.withTransaction {
+                            firestoreIdsToUpdateInRoom.forEach { (localId, fsId) ->
+                                val listToUpdate = shoppingListDao.getShoppingListById(localId, userId).first()
+                                listToUpdate?.let {
+                                    shoppingListDao.updateShoppingList(it.copy(firestoreId = fsId))
+                                }
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                }
+            }
+        }
+    }
+
 
     override suspend fun deleteShoppingList(shoppingList: ShoppingList) {
         val userId = getCurrentUserId()

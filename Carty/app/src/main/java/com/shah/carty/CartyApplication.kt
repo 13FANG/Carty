@@ -2,8 +2,6 @@ package com.shah.carty
 
 import android.app.Application
 import com.google.firebase.auth.FirebaseAuth
-import com.shah.carty.CartyRepository
-import com.shah.carty.OfflineCartyRepository
 
 class CartyApplication : Application() {
 
@@ -17,7 +15,8 @@ class CartyApplication : Application() {
             database.productDao(),
             database.shoppingListDao(),
             database.shoppingListItemDao(),
-            firebaseAuth
+            firebaseAuth,
+            database
         )
     }
 

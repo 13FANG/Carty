@@ -13,7 +13,6 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.auth.FirebaseAuth
 import com.shah.carty.databinding.FragmentShoppingListsBinding
 import kotlinx.coroutines.launch
@@ -74,7 +73,7 @@ class ShoppingListsFragment : Fragment() {
         binding.shoppingListsRV.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = shoppingListAdapter
-            // ItemAnimator остается по умолчанию, notifyDataSetChanged() его проигнорирует для этого обновления
+            itemAnimator = null
         }
 
         val callback = SimpleItemTouchHelperCallback(shoppingListAdapter)
@@ -86,7 +85,6 @@ class ShoppingListsFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { uiState ->
-                    // Здесь submitList все еще работает, но notifyDataSetChanged в адаптере сделает всю работу
                     shoppingListAdapter.submitList(uiState.activeLists)
                 }
             }
@@ -143,9 +141,7 @@ class ShoppingListsFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         itemTouchHelper?.attachToRecyclerView(null)
-        if (_binding != null) {
-            binding.shoppingListsRV.adapter = null
-        }
+        _binding?.shoppingListsRV?.adapter = null
         _binding = null
     }
 }

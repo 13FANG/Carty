@@ -25,6 +25,7 @@ interface CartyRepository {
     suspend fun deleteShoppingList(shoppingList: ShoppingList)
     fun getActiveAndFavoriteLists(): Flow<List<ShoppingList>>
     fun getShoppingListById (shoppingListIdForSearch: Long): Flow<ShoppingList?>
+    suspend fun updateShoppingLists(shoppingLists: List<ShoppingList>)
 
     //Shopping List Item
     suspend fun addShoppingListItem(shoppingListItem: ShoppingListItem)

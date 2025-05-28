@@ -70,14 +70,14 @@ interface ShoppingListDao {
     @Delete
     suspend fun deleteShoppingList(shoppingList: ShoppingList)
 
-    @Query("SELECT * FROM ShoppingList WHERE ownerId = :ownerId AND (isFavorite = 1 OR isCompleted = 0) ORDER BY manualSortIndex ASC, createdAt DESC")
+    @Query("SELECT * FROM ShoppingList WHERE ownerId = :ownerId AND (isFavorite = 1 OR isCompleted = 0) ORDER BY isFavorite DESC, manualSortIndex ASC, createdAt DESC")
     fun getActiveAndFavoriteLists(ownerId: String): Flow<List<ShoppingList>>
 
     @Query("SELECT * FROM ShoppingList WHERE shoppingListId = :shoppingListId AND ownerId = :ownerId")
     fun getShoppingListById(shoppingListId: Long, ownerId: String): Flow<ShoppingList?>
 
     @Query("SELECT * FROM ShoppingList WHERE ownerId = :ownerId")
-    fun getAllListsByOwnerId(ownerId: String): Flow<List<ShoppingList>> // Для очистки
+    fun getAllListsByOwnerId(ownerId: String): Flow<List<ShoppingList>>
 
     @Query("DELETE FROM ShoppingList WHERE ownerId = :ownerId")
     suspend fun deleteAllByOwnerId(ownerId: String)
@@ -86,7 +86,7 @@ interface ShoppingListDao {
 @Dao
 interface ShoppingListItemDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun addShoppingListItem(shoppingListItem: ShoppingListItem): Long
+    suspend fun addShoppingListItem(shoppingListItem: ShoppingListItem)
 
     @Update
     suspend fun updateShoppingListItem(shoppingListItem: ShoppingListItem)

@@ -1,10 +1,8 @@
 package com.shah.carty
 
-import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.shah.carty.CartyRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -36,13 +34,14 @@ data class EditProductUiState(
 class EditProductViewModel(
     private val repository: CartyRepository,
     private val savedStateHandle: SavedStateHandle,
-    private val stringProvider: (Int) -> String
+    private val stringProvider: (Int) -> String,
+    private val application: CartyApplication
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EditProductUiState())
     val uiState: StateFlow<EditProductUiState> = _uiState.asStateFlow()
 
-    private val productId: Long = savedStateHandle.get<Long>("productId") ?: 0L
+    private val productIdArg: Long = savedStateHandle.get<Long>("productId") ?: 0L
 
     private val unitDisplayMap: Map<ProductUnit, String> by lazy {
         mapOf(
@@ -62,8 +61,8 @@ class EditProductViewModel(
         viewModelScope.launch {
             val departmentsFlow = repository.getAllDepartmentsList()
 
-            if (productId != 0L) {
-                val productFlow = repository.getProductById(productId)
+            if (productIdArg != 0L) {
+                val productFlow = repository.getProductById(productIdArg)
 
                 combine(departmentsFlow, productFlow) { departments, product ->
                     product?.let { p ->
@@ -131,12 +130,11 @@ class EditProductViewModel(
         }
     }
 
-    fun saveProduct(onSaveFinished: () -> Unit) {
+    fun saveProduct() {
         val current = _uiState.value
-        if (!current.saveButtonEnabled || current.productName.isBlank()) {
-            onSaveFinished()
-            return
-        }
+        if (!current.saveButtonEnabled || current.productName.isBlank()) return
+
+        val ownerId = application.getCurrentUserId()
 
         viewModelScope.launch {
             val priceDouble = current.defaultPrice.toDoubleOrNull()
@@ -146,18 +144,12 @@ class EditProductViewModel(
                 departmentId = current.selectedDepartmentId,
                 defaultUnit = current.selectedUnit,
                 defaultPrice = priceDouble,
-                ownerId = ""
+                ownerId = ownerId
             )
-            try {
-                if (current.isEditing) {
-                    repository.updateProduct(productToSave)
-                } else {
-                    repository.addProduct(productToSave)
-                }
-            } catch (e: Exception) {
-                Log.e("EditProductVM", "Error saving product", e)
-            } finally {
-                onSaveFinished()
+            if (current.isEditing) {
+                repository.updateProduct(productToSave)
+            } else {
+                repository.addProduct(productToSave)
             }
         }
     }

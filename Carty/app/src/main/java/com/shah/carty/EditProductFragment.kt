@@ -7,10 +7,8 @@ import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Toast
-import androidx.core.os.bundleOf
 import androidx.core.widget.doOnTextChanged
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.setFragmentResult
 import androidx.fragment.app.setFragmentResultListener
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -50,12 +48,9 @@ class EditProductFragment : Fragment() {
         setupInputListeners()
 
         binding.saveProductButton.setOnClickListener {
-            binding.saveProductButton.isEnabled = false
-
-            viewModel.saveProduct {
-                if (isAdded && view != null) {
-                    findNavController().popBackStack()
-                }
+            viewModel.saveProduct()
+            if (isAdded && getView() != null) { // Добавлена проверка isAdded и getView()
+                findNavController().popBackStack()
             }
         }
 
@@ -76,15 +71,17 @@ class EditProductFragment : Fragment() {
                 viewModel.uiState.collect { uiState ->
                     if (uiState.productNotFound) {
                         Toast.makeText(requireContext(), "Товар не найден", Toast.LENGTH_LONG).show()
-                        findNavController().popBackStack()
+                        if (isAdded && getView() != null) { // Добавлена проверка
+                            findNavController().popBackStack()
+                        }
                         return@collect
                     }
 
                     if (!uiState.isLoading) {
-                        if (binding.productNameET.text.toString() != uiState.productName) {
+                        if (binding.productNameET.text.toString() != uiState.productName && !binding.productNameET.hasFocus()) {
                             binding.productNameET.setText(uiState.productName)
                         }
-                        if (binding.priceET.text.toString() != uiState.defaultPrice) {
+                        if (binding.priceET.text.toString() != uiState.defaultPrice && !binding.priceET.hasFocus()) {
                             binding.priceET.setText(uiState.defaultPrice)
                         }
 
@@ -114,7 +111,7 @@ class EditProductFragment : Fragment() {
                     binding.addProductLable.text = if (uiState.isEditing) getString(R.string.edit_product_title) else getString(R.string.add_product_title)
                     binding.saveProductButton.isEnabled = uiState.saveButtonEnabled
 
-                    if (uiState.isEditing && uiState.productName.isNotEmpty() && !uiState.isLoading) {
+                    if (uiState.isEditing && uiState.productName.isNotEmpty() && !uiState.isLoading && !binding.productNameET.hasFocus()) {
                         binding.productNameET.setSelection(binding.productNameET.text.length)
                     }
                 }

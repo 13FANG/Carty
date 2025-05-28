@@ -1,8 +1,5 @@
 package com.shah.carty
 
-import android.util.Log
-import com.shah.carty.Department
-import com.shah.carty.CartyRepository
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.SharingStarted
@@ -16,7 +13,10 @@ data class DepartmentsUiState(
     val departmentNameToAdd: String = ""
 )
 
-class DepartmentsViewModel(private val repository: CartyRepository) : ViewModel() {
+class DepartmentsViewModel(
+    private val repository: CartyRepository,
+    private val application: CartyApplication
+) : ViewModel() {
 
     val uiState: StateFlow<DepartmentsUiState> =
         repository.getAllDepartmentsList()
@@ -30,10 +30,10 @@ class DepartmentsViewModel(private val repository: CartyRepository) : ViewModel(
     fun addDepartment(departmentName: String) {
         viewModelScope.launch {
             if (departmentName.isNotBlank()) {
-                val ownerIdPlaceholder = "user_guest_or_id" // ЗАГЛУШКА
+                val ownerId = application.getCurrentUserId()
                 val newDepartment = Department(
                     departmentName = departmentName.trim(),
-                    ownerId = ownerIdPlaceholder
+                    ownerId = ownerId
                 )
                 repository.addDepartment(newDepartment)
             }
@@ -41,14 +41,8 @@ class DepartmentsViewModel(private val repository: CartyRepository) : ViewModel(
     }
 
     fun deleteDepartment(department: Department) {
-        Log.d("DepartmentsVM", "Deleting department in ViewModel: ${department.departmentName}") // ЛОГ
         viewModelScope.launch {
-            try { // Добавим try-catch для отладки
-                repository.deleteDepartment(department)
-                Log.d("DepartmentsVM", "Department deletion initiated in repository for: ${department.departmentName}")
-            } catch (e: Exception) {
-                Log.e("DepartmentsVM", "Error calling repository.deleteDepartment", e)
-            }
+            repository.deleteDepartment(department)
         }
     }
 }

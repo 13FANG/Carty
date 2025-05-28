@@ -11,7 +11,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.auth.FirebaseAuth
 import com.shah.carty.databinding.FragmentShoppingListsBinding
 import kotlinx.coroutines.launch
@@ -31,6 +33,7 @@ class ShoppingListsFragment : Fragment() {
         get() = requireActivity().application as CartyApplication
 
     private lateinit var shoppingListAdapter: ShoppingListAdapter
+    private var itemTouchHelper: ItemTouchHelper? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -63,18 +66,27 @@ class ShoppingListsFragment : Fragment() {
             onItemClicked = { shoppingList ->
                 val action = ShoppingListsFragmentDirections.actionShoppingListsFragmentToViewShoppingListFragment(shoppingList.shoppingListId)
                 findNavController().navigate(action)
+            },
+            onOrderChanged = { updatedList ->
+                viewModel.updateShoppingListsOrder(updatedList)
             }
         )
         binding.shoppingListsRV.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = shoppingListAdapter
+            // ItemAnimator остается по умолчанию, notifyDataSetChanged() его проигнорирует для этого обновления
         }
+
+        val callback = SimpleItemTouchHelperCallback(shoppingListAdapter)
+        itemTouchHelper = ItemTouchHelper(callback)
+        itemTouchHelper?.attachToRecyclerView(binding.shoppingListsRV)
     }
 
     private fun observeViewModel() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { uiState ->
+                    // Здесь submitList все еще работает, но notifyDataSetChanged в адаптере сделает всю работу
                     shoppingListAdapter.submitList(uiState.activeLists)
                 }
             }
@@ -88,7 +100,7 @@ class ShoppingListsFragment : Fragment() {
         val currentUser = FirebaseAuth.getInstance().currentUser
         popup.menu.findItem(R.id.action_logout)?.isVisible = (currentUser != null)
         popup.menu.findItem(R.id.action_login)?.isVisible = (currentUser == null)
-        popup.menu.findItem(R.id.action_show_statistics)?.isVisible = false
+
 
         popup.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
@@ -100,32 +112,26 @@ class ShoppingListsFragment : Fragment() {
                     findNavController().navigate(ShoppingListsFragmentDirections.actionShoppingListsFragmentToDepartmentsFragment())
                     true
                 }
-//                R.id.action_show_statistics -> {
-//                    findNavController().navigate(ShoppingListsFragmentDirections.actionShoppingListsFragmentToStatisticsMainFragment())
-//                    true
-//                }
+                R.id.action_show_statistics -> {
+                    findNavController().navigate(ShoppingListsFragmentDirections.actionShoppingListsFragmentToStatisticsMainFragment())
+                    true
+                }
                 R.id.action_logout -> {
                     lifecycleScope.launch {
                         (cartyApp.repository as OfflineCartyRepository).clearLocalUserDataOnSignOut()
                         FirebaseAuth.getInstance().signOut()
-                        findNavController().navigate(
-                            R.id.loginFragment,
-                            null,
-                            androidx.navigation.NavOptions.Builder()
-                                .setPopUpTo(R.id.nav_graph, true)
-                                .build()
-                        )
+                        val navOptions = androidx.navigation.NavOptions.Builder()
+                            .setPopUpTo(R.id.nav_graph, true)
+                            .build()
+                        findNavController().navigate(R.id.loginFragment, null, navOptions)
                     }
                     true
                 }
                 R.id.action_login -> {
-                    findNavController().navigate(
-                        R.id.loginFragment,
-                        null,
-                        androidx.navigation.NavOptions.Builder()
-                            .setPopUpTo(R.id.nav_graph, true)
-                            .build()
-                    )
+                    val navOptions = androidx.navigation.NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_graph, true)
+                        .build()
+                    findNavController().navigate(R.id.loginFragment, null, navOptions)
                     true
                 }
                 else -> false
@@ -136,7 +142,10 @@ class ShoppingListsFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        binding.shoppingListsRV.adapter = null
+        itemTouchHelper?.attachToRecyclerView(null)
+        if (_binding != null) {
+            binding.shoppingListsRV.adapter = null
+        }
         _binding = null
     }
 }

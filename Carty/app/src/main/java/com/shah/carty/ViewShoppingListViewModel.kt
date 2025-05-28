@@ -3,15 +3,15 @@ package com.shah.carty
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.shah.carty.CartyRepository
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import com.google.firebase.auth.FirebaseAuth
 
 
 data class ViewShoppingListUiState(
@@ -24,42 +24,78 @@ data class ViewShoppingListUiState(
 
 class ViewShoppingListViewModel(
     private val repository: CartyRepository,
-    savedStateHandle: SavedStateHandle
+    savedStateHandle: SavedStateHandle,
+    private val application: CartyApplication
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(ViewShoppingListUiState())
-    val uiState: StateFlow<ViewShoppingListUiState> = _uiState.asStateFlow()
-
     private val shoppingListId: Long = savedStateHandle.get<Long>("shoppingListId")!!
+    private val _productToAddStateFlow = MutableStateFlow<Product?>(null)
 
-    init {
-        loadListDetails()
-    }
+    val uiState: StateFlow<ViewShoppingListUiState> = combine(
+        repository.getShoppingListById(shoppingListId),
+        repository.getItemsForList(shoppingListId),
+        _productToAddStateFlow.asStateFlow()
+    ) { list, items, productToAdd ->
+        ViewShoppingListUiState(
+            currentList = list,
+            itemsInList = items,
+            isLoading = false,
+            listNotFound = (list == null && items.any { it.shoppingListId == shoppingListId }),
+            productToAdd = productToAdd
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000L),
+        initialValue = ViewShoppingListUiState(isLoading = true)
+    )
 
-    private fun loadListDetails() {
-        _uiState.update { it.copy(isLoading = true) }
+
+    fun updateShoppingListItemsOrder(orderedItems: List<ShoppingListItem>) {
         viewModelScope.launch {
-            repository.getShoppingListById(shoppingListId).collectLatest { list ->
-                if (list == null) {
-                    _uiState.update { it.copy(isLoading = false, listNotFound = true) }
-                } else {
-                    _uiState.update { it.copy(currentList = list) }
-                    repository.getItemsForList(shoppingListId).collectLatest { items ->
-                        _uiState.update { currentState ->
-                            currentState.copy(
-                                itemsInList = items,
-                                isLoading = false,
-                                listNotFound = false
-                            )
-                        }
+            val itemsToUpdate = mutableListOf<ShoppingListItem>()
+            val currentSnapshot = uiState.value.itemsInList
+
+            orderedItems.forEachIndexed { index, newItemOrderVersion ->
+                val oldVersionInState = currentSnapshot.find { it.shoppingListItemId == newItemOrderVersion.shoppingListItemId }
+
+                if (oldVersionInState != null) {
+                    if (oldVersionInState.manualSortOrder != index ||
+                        currentSnapshot.getOrNull(index)?.shoppingListItemId != newItemOrderVersion.shoppingListItemId) {
+                        itemsToUpdate.add(newItemOrderVersion.copy(manualSortOrder = index))
                     }
+                } else {
+                    itemsToUpdate.add(newItemOrderVersion.copy(manualSortOrder = index))
+                }
+            }
+
+            if (itemsToUpdate.isEmpty() && currentSnapshot.size == orderedItems.size) {
+                var orderChanged = false
+                for(i in orderedItems.indices) {
+                    if(currentSnapshot.getOrNull(i)?.shoppingListItemId != orderedItems.getOrNull(i)?.shoppingListItemId) {
+                        orderChanged = true
+                        break
+                    }
+                }
+                if(orderChanged) {
+                    orderedItems.forEachIndexed{ index, item ->
+                        itemsToUpdate.add(item.copy(manualSortOrder = index))
+                    }
+                }
+            }
+
+            if (itemsToUpdate.isNotEmpty()) {
+                itemsToUpdate.forEach { repository.updateShoppingListItem(it) }
+                uiState.value.currentList?.let { list ->
+                    if (list.isCompleted) return@let
+                    val updatedList = list.copy(updatedAt = System.currentTimeMillis())
+                    repository.updateShoppingList(updatedList)
                 }
             }
         }
     }
 
     fun updateListName(newName: String) {
-        _uiState.value.currentList?.let { list ->
+        uiState.value.currentList?.let { list ->
             val trimmedName = newName.trim()
             if (list.shoppingListName != trimmedName && trimmedName.isNotBlank()) {
                 viewModelScope.launch {
@@ -74,7 +110,7 @@ class ViewShoppingListViewModel(
     }
 
     fun toggleFavoriteStatus() {
-        _uiState.value.currentList?.let { list ->
+        uiState.value.currentList?.let { list ->
             viewModelScope.launch {
                 val updatedList = list.copy(
                     isFavorite = !list.isFavorite,
@@ -86,7 +122,7 @@ class ViewShoppingListViewModel(
     }
 
     fun completeShoppingList() {
-        _uiState.value.currentList?.let { list ->
+        uiState.value.currentList?.let { list ->
             if (!list.isCompleted) {
                 viewModelScope.launch {
                     val updatedList = list.copy(
@@ -100,7 +136,7 @@ class ViewShoppingListViewModel(
     }
 
     fun deleteFullShoppingList(callback: () -> Unit) {
-        _uiState.value.currentList?.let { list ->
+        uiState.value.currentList?.let { list ->
             viewModelScope.launch {
                 repository.deleteShoppingListItemsById(list.shoppingListId)
                 repository.deleteShoppingList(list)
@@ -124,21 +160,24 @@ class ViewShoppingListViewModel(
 
     fun loadProductToAdd(productId: Long) {
         viewModelScope.launch {
-            val product = repository.getProductById(productId).first()
-            _uiState.update { it.copy(productToAdd = product) }
+            _productToAddStateFlow.value = repository.getProductById(productId).first()
         }
     }
 
     fun clearProductToAdd() {
-        _uiState.update { it.copy(productToAdd = null) }
+        _productToAddStateFlow.value = null
     }
 
     fun confirmAddProductToList(quantity: Double, price: Double?, unit: ProductUnit) {
-        val product = _uiState.value.productToAdd
-        val listId = _uiState.value.currentList?.shoppingListId
+        val product = _productToAddStateFlow.value
+        val listId = uiState.value.currentList?.shoppingListId
+        val ownerId = application.getCurrentUserId()
 
         if (product != null && listId != null) {
             viewModelScope.launch {
+                val currentItems = repository.getItemsForList(listId).first()
+                val newSortOrder = (currentItems.minOfOrNull { it.manualSortOrder } ?: 1) - 1
+
                 val newItem = ShoppingListItem(
                     shoppingListId = listId,
                     productId = product.productId,
@@ -148,8 +187,8 @@ class ViewShoppingListViewModel(
                     price = price ?: product.defaultPrice,
                     isBought = false,
                     departmentIdAtPurchase = product.departmentId,
-                    manualSortOrder = (_uiState.value.itemsInList.maxOfOrNull { it.manualSortOrder } ?: -1) + 1,
-                    ownerId = "",
+                    manualSortOrder = newSortOrder,
+                    ownerId = ownerId,
                     firestoreId = ""
                 )
                 repository.addShoppingListItem(newItem)

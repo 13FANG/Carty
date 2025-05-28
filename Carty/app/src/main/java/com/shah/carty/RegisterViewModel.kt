@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
-import com.shah.carty.CartyRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,7 +23,8 @@ data class RegisterUiState(
 
 class RegisterViewModel(
     private val repository: CartyRepository,
-    private val firebaseAuth: FirebaseAuth
+    private val firebaseAuth: FirebaseAuth,
+    private val application: CartyApplication
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RegisterUiState())
@@ -49,6 +49,10 @@ class RegisterViewModel(
 
         if (email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
             _uiState.update { it.copy(errorMessage = "Все поля должны быть заполнены.") }
+            return
+        }
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()){
+            _uiState.update { it.copy(errorMessage = "Некорректный формат Email.") }
             return
         }
         if (password != confirmPassword) {

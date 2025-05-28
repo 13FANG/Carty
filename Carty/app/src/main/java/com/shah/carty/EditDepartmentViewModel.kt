@@ -3,7 +3,6 @@ package com.shah.carty
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.shah.carty.CartyRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,7 +21,8 @@ data class EditDepartmentUiState(
 
 class EditDepartmentViewModel(
     private val repository: CartyRepository,
-    private val savedStateHandle: SavedStateHandle
+    private val savedStateHandle: SavedStateHandle,
+    private val application: CartyApplication
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EditDepartmentUiState())
@@ -68,12 +68,13 @@ class EditDepartmentViewModel(
             callback(false)
             return
         }
+        val ownerId = application.getCurrentUserId()
 
         viewModelScope.launch {
             val departmentToSave = Department(
                 departmentId = if (currentUiState.isEditing) currentUiState.departmentId else 0L,
                 departmentName = currentUiState.departmentName.trim(),
-                ownerId = ""
+                ownerId = ownerId
             )
 
             try {

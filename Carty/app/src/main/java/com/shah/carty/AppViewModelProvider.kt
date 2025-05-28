@@ -6,8 +6,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.google.firebase.auth.FirebaseAuth
-import com.shah.carty.CartyRepository
-import com.shah.carty.DepartmentsViewModel
 
 class AppViewModelProvider(
     private val repository: CartyRepository,
@@ -19,25 +17,26 @@ class AppViewModelProvider(
         val savedStateHandle = extras.createSavedStateHandle()
         val firebaseAuth = FirebaseAuth.getInstance()
         val stringProviderLambda: (Int) -> String = { resId -> application.getString(resId) }
+        val cartyApplication = application as CartyApplication
 
 
         return when {
             modelClass.isAssignableFrom(DepartmentsViewModel::class.java) ->
-                DepartmentsViewModel(repository) as T
+                DepartmentsViewModel(repository, cartyApplication) as T
             modelClass.isAssignableFrom(EditDepartmentViewModel::class.java) ->
-                EditDepartmentViewModel(repository, savedStateHandle) as T
+                EditDepartmentViewModel(repository, savedStateHandle, cartyApplication) as T
             modelClass.isAssignableFrom(ProductsViewModel::class.java) ->
-                ProductsViewModel(repository) as T
+                ProductsViewModel(repository, cartyApplication) as T
             modelClass.isAssignableFrom(EditProductViewModel::class.java) ->
-                EditProductViewModel(repository, savedStateHandle, stringProviderLambda) as T
+                EditProductViewModel(repository, savedStateHandle, stringProviderLambda, cartyApplication) as T
             modelClass.isAssignableFrom(ShoppingListsViewModel::class.java) ->
-                ShoppingListsViewModel(repository) as T
+                ShoppingListsViewModel(repository, cartyApplication) as T
             modelClass.isAssignableFrom(ViewShoppingListViewModel::class.java) ->
-                ViewShoppingListViewModel(repository, savedStateHandle) as T
+                ViewShoppingListViewModel(repository, savedStateHandle, cartyApplication) as T
             modelClass.isAssignableFrom(LoginViewModel::class.java) ->
-                LoginViewModel(repository, firebaseAuth) as T
+                LoginViewModel(repository, firebaseAuth, cartyApplication) as T
             modelClass.isAssignableFrom(RegisterViewModel::class.java) ->
-                RegisterViewModel(repository, firebaseAuth) as T
+                RegisterViewModel(repository, firebaseAuth, cartyApplication) as T
             else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }
     }

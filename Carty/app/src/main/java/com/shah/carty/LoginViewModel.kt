@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
-import com.shah.carty.CartyRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,7 +22,8 @@ data class LoginUiState(
 
 class LoginViewModel(
     private val repository: CartyRepository,
-    private val firebaseAuth: FirebaseAuth
+    private val firebaseAuth: FirebaseAuth,
+    private val application: CartyApplication
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -42,7 +42,7 @@ class LoginViewModel(
         val password = _uiState.value.password
 
         if (email.isEmpty() || password.isEmpty()) {
-            _uiState.update { it.copy(errorMessage = "Email и пароль не могут быть пустыми") }
+            _uiState.update { it.copy(errorMessage = "Email и пароль не должны быть пустыми.") }
             return
         }
 
@@ -62,20 +62,18 @@ class LoginViewModel(
     }
 
     fun resetPassword(email: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
-        if (email.trim().isEmpty()) {
-            onFailure("Введите Email для восстановления.")
+        if (email.isBlank() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            onFailure("Введите корректный Email.")
             return
         }
-        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-        firebaseAuth.sendPasswordResetEmail(email.trim())
-            .addOnCompleteListener { task ->
-                _uiState.update { it.copy(isLoading = false) }
-                if (task.isSuccessful) {
-                    onSuccess()
-                } else {
-                    onFailure(task.exception?.localizedMessage ?: "Не удалось отправить письмо.")
-                }
+        viewModelScope.launch {
+            try {
+                firebaseAuth.sendPasswordResetEmail(email).await()
+                onSuccess()
+            } catch (e: Exception) {
+                onFailure("Ошибка: ${e.localizedMessage}")
             }
+        }
     }
 
     fun consumeErrorMessage() {

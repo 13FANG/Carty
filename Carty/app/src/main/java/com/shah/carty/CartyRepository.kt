@@ -9,6 +9,7 @@ interface CartyRepository {
     suspend fun deleteDepartment(department: Department)
     fun getAllDepartmentsList(): Flow<List<Department>>
     fun getDepartmentById (departmentIdForSearch: Long): Flow<Department?>
+    suspend fun updateDepartments(departments: List<Department>)
 
     // Product
     suspend fun addProduct(product: Product)
@@ -18,6 +19,7 @@ interface CartyRepository {
     fun getProductById(productIdForSearch: Long): Flow<Product?>
     fun getProductByName(productNameForSearch: String): Flow<List<Product>>
     suspend fun resetDepartmentId(departmentIdToDelete: Long)
+    suspend fun updateProducts(products: List<Product>)
 
     //Shopping List
     suspend fun addShoppingList(shoppingList: ShoppingList): Long
@@ -35,6 +37,8 @@ interface CartyRepository {
     fun getShoppingListItemById (shoppingListItemIdForSearch: Long): Flow<ShoppingListItem?>
     suspend fun deleteShoppingListItemsById(shoppingListIdForDel: Long)
     suspend fun deleteShoppingListItemsByProductId(productIdForDel: Long)
+    suspend fun updateShoppingListItems(items: List<ShoppingListItem>)
+
 
     // Auth and Sync related
     fun isUserLoggedIn(): Boolean

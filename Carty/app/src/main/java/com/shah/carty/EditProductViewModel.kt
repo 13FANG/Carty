@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import android.util.Log
 
 data class ProductUnitDisplay(val unit: ProductUnit, val displayName: String)
 
@@ -62,6 +63,7 @@ class EditProductViewModel(
             val departmentsFlow = repository.getAllDepartmentsList()
 
             if (productIdArg != 0L) {
+                _uiState.update { it.copy(isEditing = true, productId = productIdArg) }
                 val productFlow = repository.getProductById(productIdArg)
 
                 combine(departmentsFlow, productFlow) { departments, product ->
@@ -83,7 +85,8 @@ class EditProductViewModel(
                         allDepartments = departments,
                         allUnitsDisplay = initialUnitsDisplay,
                         isLoading = false,
-                        productNotFound = true
+                        productNotFound = true,
+                        isEditing = true
                     )
                 }.stateIn(
                     scope = viewModelScope,
@@ -93,6 +96,7 @@ class EditProductViewModel(
                     _uiState.value = combinedState
                 }
             } else {
+                _uiState.update { it.copy(isEditing = false, productId = 0L) }
                 departmentsFlow.first().let { departments ->
                     _uiState.update {
                         it.copy(
@@ -130,26 +134,54 @@ class EditProductViewModel(
         }
     }
 
-    fun saveProduct() {
+    fun saveProduct(onProductSaved: () -> Unit) {
+        Log.d("CartyDebug", "EditProductViewModel - saveProduct() called")
         val current = _uiState.value
-        if (!current.saveButtonEnabled || current.productName.isBlank()) return
+        Log.d("CartyDebug", "EditProductViewModel - current UI state for save: $current")
+
+        if (!current.saveButtonEnabled || current.productName.isBlank()) {
+            Log.w("CartyDebug", "EditProductViewModel - saveProduct() aborted: saveButtonEnabled=${current.saveButtonEnabled}, productNameBlank=${current.productName.isBlank()}")
+            return
+        }
 
         val ownerId = application.getCurrentUserId()
+        val priceDouble = current.defaultPrice.toDoubleOrNull()
 
         viewModelScope.launch {
-            val priceDouble = current.defaultPrice.toDoubleOrNull()
-            val productToSave = Product(
-                productId = if (current.isEditing) current.productId else 0L,
-                productName = current.productName.trim(),
-                departmentId = current.selectedDepartmentId,
-                defaultUnit = current.selectedUnit,
-                defaultPrice = priceDouble,
-                ownerId = ownerId
-            )
-            if (current.isEditing) {
-                repository.updateProduct(productToSave)
-            } else {
-                repository.addProduct(productToSave)
+            Log.d("CartyDebug", "EditProductViewModel - saveProduct() coroutine started. isEditing: ${current.isEditing}")
+            try {
+                if (current.isEditing) {
+                    val existingProduct = repository.getProductById(current.productId).first()
+                    val productToUpdate = Product(
+                        productId = current.productId,
+                        productName = current.productName.trim(),
+                        departmentId = current.selectedDepartmentId,
+                        defaultUnit = current.selectedUnit,
+                        defaultPrice = priceDouble,
+                        ownerId = ownerId,
+                        manualSortIndex = existingProduct?.manualSortIndex ?: 0,
+                        firestoreId = existingProduct?.firestoreId ?: ""
+                    )
+                    Log.d("CartyDebug", "EditProductViewModel - calling repository.updateProduct with: $productToUpdate")
+                    repository.updateProduct(productToUpdate)
+                } else {
+                    val newProduct = Product(
+                        productId = 0L,
+                        productName = current.productName.trim(),
+                        departmentId = current.selectedDepartmentId,
+                        defaultUnit = current.selectedUnit,
+                        defaultPrice = priceDouble,
+                        ownerId = ownerId,
+                        manualSortIndex = 0,
+                        firestoreId = ""
+                    )
+                    Log.d("CartyDebug", "EditProductViewModel - calling repository.addProduct with: $newProduct")
+                    repository.addProduct(newProduct)
+                }
+                Log.d("CartyDebug", "EditProductViewModel - repository call finished successfully.")
+                onProductSaved()
+            } catch (e: Exception) {
+                Log.e("CartyDebug", "EditProductViewModel - saveProduct() EXCEPTION: ${e.message}", e)
             }
         }
     }

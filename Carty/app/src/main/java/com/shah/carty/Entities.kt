@@ -10,6 +10,7 @@ data class Department(
     @PrimaryKey(autoGenerate = true) val departmentId: Long = 0L,
     val departmentName: String = "",
     val ownerId: String = "",
+    val manualSortIndex: Int = 0,
     @get:Exclude var firestoreId: String = ""
 )
 
@@ -21,6 +22,7 @@ data class Product(
     val defaultUnit: ProductUnit = ProductUnit.PIECE,
     val defaultPrice: Double? = null,
     val ownerId: String = "",
+    val manualSortIndex: Int = 0,
     @get:Exclude var firestoreId: String = ""
 )
 

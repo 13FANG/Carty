@@ -16,10 +16,13 @@ interface DepartmentDao {
     @Update
     suspend fun updateDepartment(department: Department)
 
+    @Update
+    suspend fun updateDepartments(departments: List<Department>)
+
     @Delete
     suspend fun deleteDepartment(department: Department)
 
-    @Query("SELECT * FROM Department WHERE ownerId = :ownerId ORDER BY departmentName ASC")
+    @Query("SELECT * FROM Department WHERE ownerId = :ownerId ORDER BY manualSortIndex ASC, departmentName ASC")
     fun getAllDepartmentsList(ownerId: String): Flow<List<Department>>
 
     @Query("SELECT * FROM Department WHERE departmentId = :departmentId AND ownerId = :ownerId")
@@ -37,16 +40,19 @@ interface ProductDao {
     @Update
     suspend fun updateProduct(product: Product)
 
+    @Update
+    suspend fun updateProducts(products: List<Product>)
+
     @Delete
     suspend fun deleteProduct(product: Product)
 
-    @Query("SELECT * FROM Product WHERE ownerId = :ownerId ORDER BY productName ASC")
+    @Query("SELECT * FROM Product WHERE ownerId = :ownerId ORDER BY manualSortIndex ASC, productName ASC")
     fun getAllProductsList(ownerId: String): Flow<List<Product>>
 
     @Query("SELECT * FROM Product WHERE productId = :productId AND ownerId = :ownerId")
     fun getProductById(productId: Long, ownerId: String): Flow<Product?>
 
-    @Query("SELECT * FROM Product WHERE productName LIKE '%' || :productName || '%' AND ownerId = :ownerId")
+    @Query("SELECT * FROM Product WHERE productName LIKE '%' || :productName || '%' AND ownerId = :ownerId ORDER BY manualSortIndex ASC, productName ASC")
     fun getProductsByName(productName: String, ownerId: String): Flow<List<Product>>
 
     @Query("UPDATE Product SET departmentId = NULL WHERE departmentId = :departmentIdToDelete AND ownerId = :ownerId")
@@ -55,7 +61,7 @@ interface ProductDao {
     @Query("DELETE FROM Product WHERE ownerId = :ownerId")
     suspend fun deleteAllByOwnerId(ownerId: String)
 
-    @Query("SELECT * FROM Product WHERE departmentId = :departmentId AND ownerId = :ownerId")
+    @Query("SELECT * FROM Product WHERE departmentId = :departmentId AND ownerId = :ownerId ORDER BY manualSortIndex ASC, productName ASC")
     fun getProductsByDepartmentId(departmentId: Long, ownerId: String): Flow<List<Product>>
 }
 
@@ -66,6 +72,9 @@ interface ShoppingListDao {
 
     @Update
     suspend fun updateShoppingList(shoppingList: ShoppingList)
+
+    @Update
+    suspend fun updateShoppingLists(shoppingLists: List<ShoppingList>)
 
     @Delete
     suspend fun deleteShoppingList(shoppingList: ShoppingList)
@@ -86,10 +95,13 @@ interface ShoppingListDao {
 @Dao
 interface ShoppingListItemDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun addShoppingListItem(shoppingListItem: ShoppingListItem)
+    suspend fun addShoppingListItem(shoppingListItem: ShoppingListItem): Long
 
     @Update
     suspend fun updateShoppingListItem(shoppingListItem: ShoppingListItem)
+
+    @Update
+    suspend fun updateShoppingListItems(shoppingListItems: List<ShoppingListItem>)
 
     @Delete
     suspend fun deleteShoppingListItem(shoppingListItem: ShoppingListItem)

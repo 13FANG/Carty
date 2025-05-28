@@ -1,5 +1,6 @@
 package com.shah.carty
 
+import android.util.Log
 import androidx.room.withTransaction
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -40,20 +41,75 @@ class OfflineCartyRepository(
         }
     }
 
+    private suspend fun <T: Any> batchUpdateFirestore(
+        items: List<T>,
+        collectionPath: String,
+        idExtractor: (T) -> Long,
+        firestoreIdExtractor: (T) -> String,
+        ownerIdExtractor: (T) -> String,
+        copyFunction: (T, String?, String?) -> T,
+        updateLocalWithFirestoreId: suspend (List<T>) -> Unit,
+        userId: String
+    ) {
+        if (isUserGuest()) return
+
+        val batch = firestore.batch()
+        val itemsToUpdateInRoomWithNewFsId = mutableListOf<T>()
+
+        items.forEach { item ->
+            var itemForFirestore = item
+            if (ownerIdExtractor(item) == CartyApplication.GUEST_USER_ID) {
+                itemForFirestore = copyFunction(item, null, userId)
+            }
+
+            if (ownerIdExtractor(itemForFirestore) == userId) {
+                val currentFirestoreId = firestoreIdExtractor(itemForFirestore)
+                if (currentFirestoreId.isNotBlank()) {
+                    val docRef = firestore.collection(collectionPath).document(currentFirestoreId)
+                    batch.set(docRef, itemForFirestore as Any)
+                } else {
+                    val newDocRef = firestore.collection(collectionPath).document()
+                    val newItemWithFsId = copyFunction(itemForFirestore, newDocRef.id, null)
+                    batch.set(newDocRef, newItemWithFsId as Any)
+                    itemsToUpdateInRoomWithNewFsId.add(newItemWithFsId)
+                }
+            }
+        }
+
+        if (itemsToUpdateInRoomWithNewFsId.isNotEmpty() || items.any { firestoreIdExtractor(it).isNotBlank() && ownerIdExtractor(it) == userId }) {
+            try {
+                batch.commit().await()
+                if (itemsToUpdateInRoomWithNewFsId.isNotEmpty()) {
+                    updateLocalWithFirestoreId(itemsToUpdateInRoomWithNewFsId)
+                }
+            } catch (e: Exception) {
+            }
+        }
+    }
+
+
     override suspend fun addDepartment(department: Department) {
         val userId = getCurrentUserId()
-        val departmentToInsert = department.copy(ownerId = userId, departmentId = 0L)
+        val currentDepartments = departmentDao.getAllDepartmentsList(userId).first()
+        val nextSortIndex = (currentDepartments.maxOfOrNull { it.manualSortIndex } ?: -1) + 1
+        val departmentToInsert = department.copy(
+            ownerId = userId,
+            departmentId = 0L,
+            manualSortIndex = nextSortIndex,
+            firestoreId = ""
+        )
         val generatedLocalId = departmentDao.addDepartment(departmentToInsert)
-        val departmentAfterRoomInsert = departmentToInsert.copy(departmentId = generatedLocalId, firestoreId = department.firestoreId)
+        val departmentAfterRoomInsert = departmentToInsert.copy(departmentId = generatedLocalId)
 
         safeFirestoreCall(
-            departmentAfterRoomInsert.firestoreId,
-            "departments",
-            departmentAfterRoomInsert,
-            departmentAfterRoomInsert.firestoreId.isBlank()
-        ) { newFsId, savedDept ->
-            departmentDao.updateDepartment(savedDept.copy(firestoreId = newFsId))
-        }
+            currentFirestoreId = departmentAfterRoomInsert.firestoreId,
+            collectionPath = "departments",
+            dataObject = departmentAfterRoomInsert,
+            forceCreateNew = true,
+            updateLocalWithFirestoreId = { newFsId, savedDept ->
+                departmentDao.updateDepartment(savedDept.copy(firestoreId = newFsId))
+            }
+        )
     }
 
     override suspend fun updateDepartment(department: Department) {
@@ -68,10 +124,49 @@ class OfflineCartyRepository(
             department
         }
         departmentDao.updateDepartment(finalDepartment)
-        safeFirestoreCall(finalDepartment.firestoreId, "departments", finalDepartment, finalDepartment.firestoreId.isBlank() && !isUserGuest()) {newFsId, savedObject ->
-            if (!isUserGuest()) departmentDao.updateDepartment(savedObject.copy(firestoreId = newFsId))
-        }
+        safeFirestoreCall(
+            currentFirestoreId = finalDepartment.firestoreId,
+            collectionPath = "departments",
+            dataObject = finalDepartment,
+            forceCreateNew = finalDepartment.firestoreId.isBlank() && !isUserGuest(),
+            updateLocalWithFirestoreId = {newFsId, savedObject ->
+                if (!isUserGuest()) departmentDao.updateDepartment(savedObject.copy(firestoreId = newFsId))
+            }
+        )
     }
+
+    override suspend fun updateDepartments(departments: List<Department>) {
+        val userId = getCurrentUserId()
+        database.withTransaction {
+            departmentDao.updateDepartments(departments.map {
+                if (isUserGuest() && it.ownerId != CartyApplication.GUEST_USER_ID) {
+                    it.copy(ownerId = CartyApplication.GUEST_USER_ID)
+                } else if (!isUserGuest() && it.ownerId == CartyApplication.GUEST_USER_ID) {
+                    it.copy(ownerId = userId)
+                } else {
+                    it
+                }
+            })
+        }
+        batchUpdateFirestore(
+            items = departments,
+            collectionPath = "departments",
+            idExtractor = { it.departmentId },
+            firestoreIdExtractor = { it.firestoreId },
+            ownerIdExtractor = { it.ownerId },
+            copyFunction = { item, fsId, ownerId ->
+                item.copy(
+                    firestoreId = fsId ?: item.firestoreId,
+                    ownerId = ownerId ?: item.ownerId
+                )
+            },
+            updateLocalWithFirestoreId = { updatedItemsWithFsId ->
+                database.withTransaction { departmentDao.updateDepartments(updatedItemsWithFsId) }
+            },
+            userId = userId
+        )
+    }
+
 
     override suspend fun deleteDepartment(department: Department) {
         val userId = getCurrentUserId()
@@ -104,18 +199,35 @@ class OfflineCartyRepository(
     }
 
     override suspend fun addProduct(product: Product) {
-        val userId = getCurrentUserId()
-        val productToInsert = product.copy(ownerId = userId, productId = 0L)
-        val generatedLocalId = productDao.addProduct(productToInsert)
-        val productAfterRoomInsert = productToInsert.copy(productId = generatedLocalId, firestoreId = product.firestoreId)
+        try {
+            val userId = getCurrentUserId()
+            val currentProducts = productDao.getAllProductsList(userId).first()
+            val nextSortIndex = (currentProducts.maxOfOrNull { it.manualSortIndex } ?: -1) + 1
+            val productToInsertInRoom = product.copy(
+                ownerId = userId,
+                productId = 0L,
+                manualSortIndex = nextSortIndex,
+                firestoreId = ""
+            )
+            val generatedLocalId = productDao.addProduct(productToInsertInRoom)
 
-        safeFirestoreCall(
-            productAfterRoomInsert.firestoreId,
-            "products",
-            productAfterRoomInsert,
-            productAfterRoomInsert.firestoreId.isBlank()
-        ) { newFsId, savedProd ->
-            productDao.updateProduct(savedProd.copy(firestoreId = newFsId))
+            if (generatedLocalId > 0) {
+                val productForFirestore = productToInsertInRoom.copy(
+                    productId = generatedLocalId
+                )
+
+                safeFirestoreCall(
+                    currentFirestoreId = productForFirestore.firestoreId,
+                    collectionPath = "products",
+                    dataObject = productForFirestore,
+                    forceCreateNew = true,
+                    updateLocalWithFirestoreId = { newFsId, savedProd ->
+                        productDao.updateProduct(savedProd.copy(firestoreId = newFsId))
+                    }
+                )
+            } else {
+            }
+        } catch (e: Exception) {
         }
     }
 
@@ -131,9 +243,47 @@ class OfflineCartyRepository(
             product
         }
         productDao.updateProduct(finalProduct)
-        safeFirestoreCall(finalProduct.firestoreId, "products", finalProduct, finalProduct.firestoreId.isBlank() && !isUserGuest()) {newFsId, savedObject ->
-            if(!isUserGuest()) productDao.updateProduct(savedObject.copy(firestoreId = newFsId))
+        safeFirestoreCall(
+            currentFirestoreId = finalProduct.firestoreId,
+            collectionPath = "products",
+            dataObject = finalProduct,
+            forceCreateNew = finalProduct.firestoreId.isBlank() && !isUserGuest(),
+            updateLocalWithFirestoreId = { newFsId, savedObject ->
+                if(!isUserGuest()) productDao.updateProduct(savedObject.copy(firestoreId = newFsId))
+            }
+        )
+    }
+
+    override suspend fun updateProducts(products: List<Product>) {
+        val userId = getCurrentUserId()
+        database.withTransaction {
+            productDao.updateProducts(products.map {
+                if (isUserGuest() && it.ownerId != CartyApplication.GUEST_USER_ID) {
+                    it.copy(ownerId = CartyApplication.GUEST_USER_ID)
+                } else if (!isUserGuest() && it.ownerId == CartyApplication.GUEST_USER_ID) {
+                    it.copy(ownerId = userId)
+                } else {
+                    it
+                }
+            })
         }
+        batchUpdateFirestore(
+            items = products,
+            collectionPath = "products",
+            idExtractor = { it.productId },
+            firestoreIdExtractor = { it.firestoreId },
+            ownerIdExtractor = { it.ownerId },
+            copyFunction = { item, fsId, ownerId ->
+                item.copy(
+                    firestoreId = fsId ?: item.firestoreId,
+                    ownerId = ownerId ?: item.ownerId
+                )
+            },
+            updateLocalWithFirestoreId = { updatedItemsWithFsId ->
+                database.withTransaction { productDao.updateProducts(updatedItemsWithFsId) }
+            },
+            userId = userId
+        )
     }
 
     override suspend fun deleteProduct(product: Product) {
@@ -191,18 +341,27 @@ class OfflineCartyRepository(
 
     override suspend fun addShoppingList(shoppingList: ShoppingList): Long {
         val userId = getCurrentUserId()
-        val listToInsert = shoppingList.copy(ownerId = userId, shoppingListId = 0L)
+        val currentLists = shoppingListDao.getActiveAndFavoriteLists(userId).first()
+        val nextSortIndex = (currentLists.filter { !it.isFavorite }.minOfOrNull { it.manualSortIndex } ?: 0) -1
+
+        val listToInsert = shoppingList.copy(
+            ownerId = userId,
+            shoppingListId = 0L,
+            manualSortIndex = nextSortIndex,
+            firestoreId = ""
+        )
         val generatedLocalId = shoppingListDao.addShoppingList(listToInsert)
-        val listAfterRoomInsert = listToInsert.copy(shoppingListId = generatedLocalId, firestoreId = shoppingList.firestoreId)
+        val listAfterRoomInsert = listToInsert.copy(shoppingListId = generatedLocalId)
 
         safeFirestoreCall(
-            listAfterRoomInsert.firestoreId,
-            "shoppingLists",
-            listAfterRoomInsert,
-            listAfterRoomInsert.firestoreId.isBlank()
-        ) { newFsId, savedList ->
-            shoppingListDao.updateShoppingList(savedList.copy(firestoreId = newFsId))
-        }
+            currentFirestoreId = listAfterRoomInsert.firestoreId,
+            collectionPath = "shoppingLists",
+            dataObject = listAfterRoomInsert,
+            forceCreateNew = true,
+            updateLocalWithFirestoreId = { newFsId, savedList ->
+                shoppingListDao.updateShoppingList(savedList.copy(firestoreId = newFsId))
+            }
+        )
         return generatedLocalId
     }
 
@@ -218,68 +377,48 @@ class OfflineCartyRepository(
             shoppingList
         }
         shoppingListDao.updateShoppingList(finalList)
-        safeFirestoreCall(finalList.firestoreId, "shoppingLists", finalList, finalList.firestoreId.isBlank() && !isUserGuest()) {newFsId, savedObject ->
-            if (!isUserGuest()) shoppingListDao.updateShoppingList(savedObject.copy(firestoreId = newFsId))
-        }
+        safeFirestoreCall(
+            currentFirestoreId = finalList.firestoreId,
+            collectionPath = "shoppingLists",
+            dataObject = finalList,
+            forceCreateNew = finalList.firestoreId.isBlank() && !isUserGuest(),
+            updateLocalWithFirestoreId = {newFsId, savedObject ->
+                if (!isUserGuest()) shoppingListDao.updateShoppingList(savedObject.copy(firestoreId = newFsId))
+            }
+        )
     }
 
     override suspend fun updateShoppingLists(shoppingLists: List<ShoppingList>) {
         val userId = getCurrentUserId()
 
         database.withTransaction {
-            shoppingLists.forEach { list ->
-                if (list.ownerId == userId || (isUserGuest() && list.ownerId == CartyApplication.GUEST_USER_ID)) {
-                    val finalListForRoom = if (isUserGuest() && list.ownerId != CartyApplication.GUEST_USER_ID) {
-                        list.copy(ownerId = CartyApplication.GUEST_USER_ID)
-                    } else if (!isUserGuest() && list.ownerId == CartyApplication.GUEST_USER_ID) {
-                        list.copy(ownerId = userId)
-                    } else {
-                        list
-                    }
-                    shoppingListDao.updateShoppingList(finalListForRoom)
-                }
-            }
-        }
-
-        if (!isUserGuest()) {
-            val batch = firestore.batch()
-            val firestoreIdsToUpdateInRoom = mutableMapOf<Long, String>()
-
-            shoppingLists.forEach { listFromApp ->
-                val listForFirestore = if (listFromApp.ownerId == CartyApplication.GUEST_USER_ID) {
-                    listFromApp.copy(ownerId = userId)
+            shoppingListDao.updateShoppingLists(shoppingLists.map {
+                if (isUserGuest() && it.ownerId != CartyApplication.GUEST_USER_ID) {
+                    it.copy(ownerId = CartyApplication.GUEST_USER_ID)
+                } else if (!isUserGuest() && it.ownerId == CartyApplication.GUEST_USER_ID) {
+                    it.copy(ownerId = userId)
                 } else {
-                    listFromApp
+                    it
                 }
-
-                if (listForFirestore.ownerId == userId) {
-                    if (listForFirestore.firestoreId.isNotBlank()) {
-                        val docRef = firestore.collection("shoppingLists").document(listForFirestore.firestoreId)
-                        batch.set(docRef, listForFirestore)
-                    } else {
-                        val newDocRef = firestore.collection("shoppingLists").document()
-                        batch.set(newDocRef, listForFirestore.copy(firestoreId = newDocRef.id))
-                        firestoreIdsToUpdateInRoom[listForFirestore.shoppingListId] = newDocRef.id
-                    }
-                }
-            }
-            if (firestoreIdsToUpdateInRoom.isNotEmpty() || shoppingLists.any { it.firestoreId.isNotBlank() && it.ownerId == userId }) {
-                try {
-                    batch.commit().await()
-                    if (firestoreIdsToUpdateInRoom.isNotEmpty()) {
-                        database.withTransaction {
-                            firestoreIdsToUpdateInRoom.forEach { (localId, fsId) ->
-                                val listToUpdate = shoppingListDao.getShoppingListById(localId, userId).first()
-                                listToUpdate?.let {
-                                    shoppingListDao.updateShoppingList(it.copy(firestoreId = fsId))
-                                }
-                            }
-                        }
-                    }
-                } catch (e: Exception) {
-                }
-            }
+            })
         }
+        batchUpdateFirestore(
+            items = shoppingLists,
+            collectionPath = "shoppingLists",
+            idExtractor = { it.shoppingListId },
+            firestoreIdExtractor = { it.firestoreId },
+            ownerIdExtractor = { it.ownerId },
+            copyFunction = { item, fsId, ownerId ->
+                item.copy(
+                    firestoreId = fsId ?: item.firestoreId,
+                    ownerId = ownerId ?: item.ownerId
+                )
+            },
+            updateLocalWithFirestoreId = { updatedItemsWithFsId ->
+                database.withTransaction { shoppingListDao.updateShoppingLists(updatedItemsWithFsId) }
+            },
+            userId = userId
+        )
     }
 
 
@@ -321,28 +460,32 @@ class OfflineCartyRepository(
 
     override suspend fun addShoppingListItem(shoppingListItem: ShoppingListItem) {
         val userId = getCurrentUserId()
-        val itemToInsert = shoppingListItem.copy(ownerId = userId, shoppingListItemId = 0L)
+        val currentItems = shoppingListItemDao.getItemsForList(shoppingListItem.shoppingListId, userId).first()
+        val nextSortOrder = (currentItems.maxOfOrNull { it.manualSortOrder } ?: -1) + 1
 
-        shoppingListItemDao.addShoppingListItem(itemToInsert)
-        val insertedItemWithPossibleId = shoppingListItemDao.getItemsForList(itemToInsert.shoppingListId, userId).first().find {
-            it.productId == itemToInsert.productId &&
-                    it.productName == itemToInsert.productName &&
-                    it.quantity == itemToInsert.quantity &&
-                    it.price == itemToInsert.price &&
-                    it.firestoreId.isBlank()
-        } ?: itemToInsert
+        val itemToInsert = shoppingListItem.copy(
+            ownerId = userId,
+            shoppingListItemId = 0L,
+            manualSortOrder = nextSortOrder,
+            firestoreId = ""
+        )
 
+        val generatedLocalId = shoppingListItemDao.addShoppingListItem(itemToInsert)
+        val itemAfterRoomInsert = itemToInsert.copy(
+            shoppingListItemId = generatedLocalId
+        )
 
         safeFirestoreCall(
-            insertedItemWithPossibleId.firestoreId,
-            "shoppingListItems",
-            insertedItemWithPossibleId,
-            insertedItemWithPossibleId.firestoreId.isBlank()
-        ) { newFsId, savedItem ->
-            if (newFsId.isNotBlank()) {
-                shoppingListItemDao.updateShoppingListItem(savedItem.copy(firestoreId = newFsId))
+            currentFirestoreId = itemAfterRoomInsert.firestoreId,
+            collectionPath = "shoppingListItems",
+            dataObject = itemAfterRoomInsert,
+            forceCreateNew = true,
+            updateLocalWithFirestoreId = { newFsId, savedItem ->
+                if (newFsId.isNotBlank()) {
+                    shoppingListItemDao.updateShoppingListItem(savedItem.copy(firestoreId = newFsId))
+                }
             }
-        }
+        )
     }
 
 
@@ -358,10 +501,49 @@ class OfflineCartyRepository(
             shoppingListItem
         }
         shoppingListItemDao.updateShoppingListItem(finalItem)
-        safeFirestoreCall(finalItem.firestoreId, "shoppingListItems", finalItem, finalItem.firestoreId.isBlank() && !isUserGuest()) {newFsId, savedObject ->
-            if(!isUserGuest()) shoppingListItemDao.updateShoppingListItem(savedObject.copy(firestoreId = newFsId))
-        }
+        safeFirestoreCall(
+            currentFirestoreId = finalItem.firestoreId,
+            collectionPath = "shoppingListItems",
+            dataObject = finalItem,
+            forceCreateNew = finalItem.firestoreId.isBlank() && !isUserGuest(),
+            updateLocalWithFirestoreId = { newFsId, savedObject ->
+                if(!isUserGuest()) shoppingListItemDao.updateShoppingListItem(savedObject.copy(firestoreId = newFsId))
+            }
+        )
     }
+
+    override suspend fun updateShoppingListItems(items: List<ShoppingListItem>) {
+        val userId = getCurrentUserId()
+        database.withTransaction {
+            shoppingListItemDao.updateShoppingListItems(items.map {
+                if (isUserGuest() && it.ownerId != CartyApplication.GUEST_USER_ID) {
+                    it.copy(ownerId = CartyApplication.GUEST_USER_ID)
+                } else if (!isUserGuest() && it.ownerId == CartyApplication.GUEST_USER_ID) {
+                    it.copy(ownerId = userId)
+                } else {
+                    it
+                }
+            })
+        }
+        batchUpdateFirestore(
+            items = items,
+            collectionPath = "shoppingListItems",
+            idExtractor = { it.shoppingListItemId },
+            firestoreIdExtractor = { it.firestoreId },
+            ownerIdExtractor = { it.ownerId },
+            copyFunction = { item, fsId, ownerId ->
+                item.copy(
+                    firestoreId = fsId ?: item.firestoreId,
+                    ownerId = ownerId ?: item.ownerId
+                )
+            },
+            updateLocalWithFirestoreId = { updatedItemsWithFsId ->
+                database.withTransaction { shoppingListItemDao.updateShoppingListItems(updatedItemsWithFsId) }
+            },
+            userId = userId
+        )
+    }
+
 
     override suspend fun deleteShoppingListItem(shoppingListItem: ShoppingListItem) {
         val userId = getCurrentUserId()
@@ -424,7 +606,7 @@ class OfflineCartyRepository(
         }
     }
 
-    private suspend fun <T> safeFirestoreCall(
+    private suspend fun <T: Any> safeFirestoreCall(
         currentFirestoreId: String,
         collectionPath: String,
         dataObject: T,
@@ -434,14 +616,15 @@ class OfflineCartyRepository(
         if (!isUserGuest()) {
             try {
                 if (forceCreateNew || currentFirestoreId.isBlank()) {
-                    val docRef = firestore.collection(collectionPath).add(dataObject!!).await()
+                    val docRef = firestore.collection(collectionPath).add(dataObject).await()
                     updateLocalWithFirestoreId(docRef.id, dataObject)
                 } else {
-                    firestore.collection(collectionPath).document(currentFirestoreId).set(dataObject!!).await()
+                    firestore.collection(collectionPath).document(currentFirestoreId).set(dataObject).await()
                     updateLocalWithFirestoreId(currentFirestoreId, dataObject)
                 }
             } catch (e: Exception) {
             }
+        } else {
         }
     }
 

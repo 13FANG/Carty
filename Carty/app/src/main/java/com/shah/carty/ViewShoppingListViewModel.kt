@@ -40,7 +40,7 @@ class ViewShoppingListViewModel(
             currentList = list,
             itemsInList = items,
             isLoading = false,
-            listNotFound = (list == null && items.any { it.shoppingListId == shoppingListId }),
+            listNotFound = (list == null && items.any { it.shoppingListId == shoppingListId } && !isLoadingInitial),
             productToAdd = productToAdd
         )
     }.stateIn(
@@ -48,47 +48,53 @@ class ViewShoppingListViewModel(
         started = SharingStarted.WhileSubscribed(5000L),
         initialValue = ViewShoppingListUiState(isLoading = true)
     )
+    private var isLoadingInitial = true
 
-
-    fun updateShoppingListItemsOrder(orderedItems: List<ShoppingListItem>) {
+    init {
         viewModelScope.launch {
-            val itemsToUpdate = mutableListOf<ShoppingListItem>()
-            val currentSnapshot = uiState.value.itemsInList
+            repository.getShoppingListById(shoppingListId).first()
+            isLoadingInitial = false
+        }
+    }
 
-            orderedItems.forEachIndexed { index, newItemOrderVersion ->
-                val oldVersionInState = currentSnapshot.find { it.shoppingListItemId == newItemOrderVersion.shoppingListItemId }
 
-                if (oldVersionInState != null) {
-                    if (oldVersionInState.manualSortOrder != index ||
-                        currentSnapshot.getOrNull(index)?.shoppingListItemId != newItemOrderVersion.shoppingListItemId) {
-                        itemsToUpdate.add(newItemOrderVersion.copy(manualSortOrder = index))
+    fun updateShoppingListItemsOrder(orderedItemsFromAdapter: List<ShoppingListItem>) {
+        viewModelScope.launch {
+            val originalItemsFromStateById = uiState.value.itemsInList.associateBy { it.shoppingListItemId }
+            var orderActuallyChanged = false
+
+            val itemsToPersist = orderedItemsFromAdapter.mapIndexedNotNull { newIndex, itemFromAdapter ->
+                val originalItem = originalItemsFromStateById[itemFromAdapter.shoppingListItemId]
+                if (originalItem != null) {
+                    if (originalItem.manualSortOrder != newIndex) {
+                        orderActuallyChanged = true
+                        itemFromAdapter.copy(manualSortOrder = newIndex)
+                    } else {
+                        itemFromAdapter
                     }
                 } else {
-                    itemsToUpdate.add(newItemOrderVersion.copy(manualSortOrder = index))
+                    orderActuallyChanged = true
+                    itemFromAdapter.copy(manualSortOrder = newIndex)
                 }
             }
 
-            if (itemsToUpdate.isEmpty() && currentSnapshot.size == orderedItems.size) {
-                var orderChanged = false
-                for(i in orderedItems.indices) {
-                    if(currentSnapshot.getOrNull(i)?.shoppingListItemId != orderedItems.getOrNull(i)?.shoppingListItemId) {
-                        orderChanged = true
-                        break
-                    }
-                }
-                if(orderChanged) {
-                    orderedItems.forEachIndexed{ index, item ->
-                        itemsToUpdate.add(item.copy(manualSortOrder = index))
-                    }
+            if (orderedItemsFromAdapter.size != uiState.value.itemsInList.size) {
+                orderActuallyChanged = true
+            } else {
+                val idsFromAdapter = orderedItemsFromAdapter.map { it.shoppingListItemId }.toSet()
+                val idsFromState = uiState.value.itemsInList.map { it.shoppingListItemId }.toSet()
+                if (idsFromAdapter != idsFromState) {
+                    orderActuallyChanged = true
                 }
             }
 
-            if (itemsToUpdate.isNotEmpty()) {
-                itemsToUpdate.forEach { repository.updateShoppingListItem(it) }
+            if (orderActuallyChanged) {
+                repository.updateShoppingListItems(itemsToPersist)
                 uiState.value.currentList?.let { list ->
-                    if (list.isCompleted) return@let
-                    val updatedList = list.copy(updatedAt = System.currentTimeMillis())
-                    repository.updateShoppingList(updatedList)
+                    if (!list.isCompleted) {
+                        val updatedList = list.copy(updatedAt = System.currentTimeMillis())
+                        repository.updateShoppingList(updatedList)
+                    }
                 }
             }
         }
@@ -149,12 +155,24 @@ class ViewShoppingListViewModel(
         viewModelScope.launch {
             val updatedItem = item.copy(isBought = isBought)
             repository.updateShoppingListItem(updatedItem)
+            uiState.value.currentList?.let { list ->
+                if (!list.isCompleted) {
+                    val updatedList = list.copy(updatedAt = System.currentTimeMillis())
+                    repository.updateShoppingList(updatedList)
+                }
+            }
         }
     }
 
     fun deleteShoppingListItem(item: ShoppingListItem) {
         viewModelScope.launch {
             repository.deleteShoppingListItem(item)
+            uiState.value.currentList?.let { list ->
+                if (!list.isCompleted) {
+                    val updatedList = list.copy(updatedAt = System.currentTimeMillis())
+                    repository.updateShoppingList(updatedList)
+                }
+            }
         }
     }
 
@@ -176,7 +194,8 @@ class ViewShoppingListViewModel(
         if (product != null && listId != null) {
             viewModelScope.launch {
                 val currentItems = repository.getItemsForList(listId).first()
-                val newSortOrder = (currentItems.minOfOrNull { it.manualSortOrder } ?: 1) - 1
+                val newSortOrder = (currentItems.maxOfOrNull { it.manualSortOrder } ?: -1) + 1
+
 
                 val newItem = ShoppingListItem(
                     shoppingListId = listId,
@@ -193,6 +212,12 @@ class ViewShoppingListViewModel(
                 )
                 repository.addShoppingListItem(newItem)
                 clearProductToAdd()
+                uiState.value.currentList?.let { list ->
+                    if (!list.isCompleted) {
+                        val updatedList = list.copy(updatedAt = System.currentTimeMillis())
+                        repository.updateShoppingList(updatedList)
+                    }
+                }
             }
         }
     }

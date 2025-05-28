@@ -13,6 +13,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.shah.carty.databinding.DialogConfirmDeleteBinding
@@ -32,6 +33,8 @@ class ProductsFragment : Fragment() {
     private val navigationArgs: ProductsFragmentArgs by navArgs()
 
     private lateinit var productAdapter: ProductAdapter
+    private var itemTouchHelper: ItemTouchHelper? = null
+
 
     companion object {
         const val REQUEST_KEY_PRODUCT_SELECTION = "productSelectionRequestKey"
@@ -69,19 +72,26 @@ class ProductsFragment : Fragment() {
                     findNavController().navigate(action)
                 }
             },
-            onItemLongClicked = { product ->
+            onDeleteClicked = { product ->
                 if (!navigationArgs.isSelectionMode) {
                     showDeleteConfirmationDialog(product)
                 }
             },
             getDepartmentName = { departmentId ->
                 viewModel.getDepartmentNameById(departmentId)
+            },
+            onOrderChanged = { updatedProducts ->
+                viewModel.updateProductsOrder(updatedProducts)
             }
         )
         binding.allProductsRV.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = productAdapter
+            itemAnimator = null
         }
+        val callback = SimpleItemTouchHelperCallback(productAdapter)
+        itemTouchHelper = ItemTouchHelper(callback)
+        itemTouchHelper?.attachToRecyclerView(binding.allProductsRV)
     }
 
     private fun observeViewModel() {
@@ -115,7 +125,8 @@ class ProductsFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        binding.allProductsRV.adapter = null
+        itemTouchHelper?.attachToRecyclerView(null)
+        _binding?.allProductsRV?.adapter = null
         _binding = null
     }
 }

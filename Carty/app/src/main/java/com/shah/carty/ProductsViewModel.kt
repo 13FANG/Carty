@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -38,6 +39,42 @@ class ProductsViewModel(
     fun deleteProduct(product: Product) {
         viewModelScope.launch {
             repository.deleteProduct(product)
+        }
+    }
+
+    fun updateProductsOrder(orderedProductsFromAdapter: List<Product>) {
+        viewModelScope.launch {
+            val originalProductsFromStateById = uiState.value.productList.associateBy { it.productId }
+            var orderActuallyChanged = false
+
+            val productsToPersist = orderedProductsFromAdapter.mapIndexedNotNull { newIndex, productFromAdapter ->
+                val originalProduct = originalProductsFromStateById[productFromAdapter.productId]
+                if (originalProduct != null) {
+                    if (originalProduct.manualSortIndex != newIndex) {
+                        orderActuallyChanged = true
+                        productFromAdapter.copy(manualSortIndex = newIndex)
+                    } else {
+                        productFromAdapter
+                    }
+                } else {
+                    orderActuallyChanged = true
+                    productFromAdapter.copy(manualSortIndex = newIndex)
+                }
+            }
+
+            if (orderedProductsFromAdapter.size != uiState.value.productList.size) {
+                orderActuallyChanged = true
+            } else {
+                val idsFromAdapter = orderedProductsFromAdapter.map { it.productId }.toSet()
+                val idsFromState = uiState.value.productList.map { it.productId }.toSet()
+                if (idsFromAdapter != idsFromState) {
+                    orderActuallyChanged = true
+                }
+            }
+
+            if (orderActuallyChanged) {
+                repository.updateProducts(productsToPersist)
+            }
         }
     }
 }

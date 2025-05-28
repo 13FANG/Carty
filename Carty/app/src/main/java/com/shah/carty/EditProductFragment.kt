@@ -48,9 +48,10 @@ class EditProductFragment : Fragment() {
         setupInputListeners()
 
         binding.saveProductButton.setOnClickListener {
-            viewModel.saveProduct()
-            if (isAdded && getView() != null) { // Добавлена проверка isAdded и getView()
-                findNavController().popBackStack()
+            viewModel.saveProduct {
+                if (isAdded && view != null) {
+                    findNavController().popBackStack()
+                }
             }
         }
 
@@ -71,7 +72,7 @@ class EditProductFragment : Fragment() {
                 viewModel.uiState.collect { uiState ->
                     if (uiState.productNotFound) {
                         Toast.makeText(requireContext(), "Товар не найден", Toast.LENGTH_LONG).show()
-                        if (isAdded && getView() != null) { // Добавлена проверка
+                        if (isAdded && getView() != null) {
                             findNavController().popBackStack()
                         }
                         return@collect

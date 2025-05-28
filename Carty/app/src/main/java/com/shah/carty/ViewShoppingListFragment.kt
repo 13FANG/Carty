@@ -14,7 +14,6 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.shah.carty.databinding.DialogAddItemDetailsBinding
 import com.shah.carty.databinding.DialogConfirmDeleteBinding
@@ -75,7 +74,7 @@ class ViewShoppingListFragment : Fragment() {
         binding.viewShoppingListRV.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = shoppingListItemAdapter
-            // ItemAnimator остается по умолчанию, notifyDataSetChanged() его проигнорирует для этого обновления
+            itemAnimator = null
         }
         val callback = SimpleItemTouchHelperCallback(shoppingListItemAdapter)
         itemTouchHelper = ItemTouchHelper(callback)
@@ -92,7 +91,7 @@ class ViewShoppingListFragment : Fragment() {
 
                     if (uiState.listNotFound) {
                         Toast.makeText(requireContext(), "Список не найден", Toast.LENGTH_LONG).show()
-                        if (isAdded && getView() != null) {
+                        if (isAdded && view != null) {
                             findNavController().popBackStack()
                         }
                         return@collect
@@ -156,7 +155,6 @@ class ViewShoppingListFragment : Fragment() {
             dialog.dismiss()
             viewModel.clearProductToAdd()
         }
-
         dialog.show()
     }
 
@@ -207,9 +205,7 @@ class ViewShoppingListFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         itemTouchHelper?.attachToRecyclerView(null)
-        if (_binding != null) {
-            binding.viewShoppingListRV.adapter = null
-        }
+        _binding?.viewShoppingListRV?.adapter = null
         _binding = null
     }
 }

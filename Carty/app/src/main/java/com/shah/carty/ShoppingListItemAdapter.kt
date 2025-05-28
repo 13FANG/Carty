@@ -7,7 +7,6 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.shah.carty.databinding.ItemShoppingListItemBinding
-import java.util.Collections
 import java.util.ArrayList
 
 class ShoppingListItemAdapter(
@@ -18,8 +17,24 @@ class ShoppingListItemAdapter(
 ) : ListAdapter<ShoppingListItem, ShoppingListItemAdapter.ItemViewHolder>(ShoppingListItemDiffCallback()),
     ItemTouchHelperAdapter {
 
-    private var currentlyDraggedList: MutableList<ShoppingListItem>? = null
-    private var listChangedDuringDrag = false
+    private var internalList: MutableList<ShoppingListItem> = mutableListOf()
+    private var dragInProgress = false
+
+    override fun submitList(list: List<ShoppingListItem>?) {
+        val listToSubmit = list ?: emptyList()
+        super.submitList(listToSubmit)
+        if (!dragInProgress) {
+            internalList = ArrayList(listToSubmit)
+        }
+    }
+
+    override fun submitList(list: List<ShoppingListItem>?, commitCallback: Runnable?) {
+        val listToSubmit = list ?: emptyList()
+        super.submitList(listToSubmit, commitCallback)
+        if (!dragInProgress) {
+            internalList = ArrayList(listToSubmit)
+        }
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ItemViewHolder {
         val binding = ItemShoppingListItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -27,46 +42,46 @@ class ShoppingListItemAdapter(
     }
 
     override fun onBindViewHolder(holder: ItemViewHolder, position: Int) {
-        val item = getItem(position)
+        val item: ShoppingListItem = if (dragInProgress && position < internalList.size) {
+            internalList[position]
+        } else if (position < super.getItemCount()){
+            getItem(position)
+        } else {
+            if (internalList.isNotEmpty()) internalList[0] else ShoppingListItem(productName = "Error")
+        }
         holder.bind(item, onItemCheckedChanged, onDeleteItemClicked, onItemClicked)
     }
 
+    override fun getItemCount(): Int {
+        return if (dragInProgress) internalList.size else super.getItemCount()
+    }
+
     override fun onItemMove(fromPosition: Int, toPosition: Int): Boolean {
-        if (currentList.isEmpty() || fromPosition < 0 || fromPosition >= currentList.size || toPosition < 0 || toPosition >= currentList.size) {
+        if (!dragInProgress) {
+            internalList.clear()
+            internalList.addAll(currentList)
+            dragInProgress = true
+        }
+
+        if (fromPosition < 0 || fromPosition >= internalList.size || toPosition < 0 || toPosition >= internalList.size) {
             return false
         }
 
-        if (currentlyDraggedList == null) {
-            currentlyDraggedList = ArrayList(currentList)
-            listChangedDuringDrag = false
-        }
-
-        val listToModify = currentlyDraggedList!!
-
         if (fromPosition == toPosition) {
-            return !listChangedDuringDrag
+            return true
         }
 
-        val item = listToModify.removeAt(fromPosition)
-        listToModify.add(toPosition, item)
+        val item = internalList.removeAt(fromPosition)
+        internalList.add(toPosition, item)
         notifyItemMoved(fromPosition, toPosition)
-        listChangedDuringDrag = true
         return true
     }
 
     override fun onDragFinished() {
-        currentlyDraggedList?.let { draggedList ->
-            if (listChangedDuringDrag) {
-                val finalList = ArrayList(draggedList)
-                onOrderChanged(finalList)
-
-                submitList(finalList) {
-                    notifyDataSetChanged()
-                }
-            }
+        if (dragInProgress) {
+            onOrderChanged(ArrayList(internalList))
         }
-        currentlyDraggedList = null
-        listChangedDuringDrag = false
+        dragInProgress = false
     }
 
 

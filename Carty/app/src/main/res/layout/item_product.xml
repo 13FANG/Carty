@@ -17,7 +17,7 @@
         android:padding="16dp">
 
         <ImageButton
-            android:id="@+id/delItemProdictImageButton"
+            android:id="@+id/delItemProductImageButton"
             android:layout_width="60dp"
             android:layout_height="60dp"
             android:backgroundTint="#00FFFFFF"
@@ -81,7 +81,7 @@
             android:textColorHint="#000000"
             android:textSize="24sp"
             android:textStyle="bold"
-            app:layout_constraintEnd_toStartOf="@+id/delItemProdictImageButton"
+            app:layout_constraintEnd_toStartOf="@+id/delItemProductImageButton"
             app:layout_constraintStart_toEndOf="@+id/departmentLableTV"
             app:layout_constraintTop_toTopOf="@+id/departmentLableTV" />
 
@@ -110,7 +110,7 @@
             android:textColorHint="#000000"
             android:textSize="24sp"
             android:textStyle="bold"
-            app:layout_constraintEnd_toStartOf="@+id/delItemProdictImageButton"
+            app:layout_constraintEnd_toStartOf="@+id/delItemProductImageButton"
             app:layout_constraintStart_toEndOf="@+id/unitLableTV"
             app:layout_constraintTop_toTopOf="@+id/unitLableTV" />
 

@@ -27,12 +27,12 @@
                 android:textSize="28sp"
                 android:textStyle="bold"
                 app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toStartOf="@+id/delItemProdictImageButton"
+                app:layout_constraintEnd_toStartOf="@+id/delItemDepartmentImageButton"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
             <ImageButton
-                android:id="@+id/delItemProdictImageButton"
+                android:id="@+id/delItemDepartmentImageButton"
                 android:layout_width="60dp"
                 android:layout_height="60dp"
                 android:backgroundTint="#00FFFFFF"

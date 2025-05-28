@@ -1,7 +1,6 @@
 package com.shah.carty
 
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,6 +10,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.shah.carty.databinding.DialogConfirmDeleteBinding
@@ -29,6 +29,8 @@ class DepartmentsFragment : Fragment() {
     }
 
     private lateinit var departmentAdapter: DepartmentAdapter
+    private var itemTouchHelper: ItemTouchHelper? = null
+
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -56,15 +58,21 @@ class DepartmentsFragment : Fragment() {
                 val action = DepartmentsFragmentDirections.actionDepartmentsFragmentToEditDepartmentFragment(department.departmentId)
                 findNavController().navigate(action)
             },
-            onDeleteButtonClicked = { department ->
-                Log.d("DepartmentsFragment", "Delete button clicked for: ${department.departmentName}")
+            onDeleteClicked = { department ->
                 showDeleteConfirmationDialog(department)
+            },
+            onOrderChanged = { updatedDepartments ->
+                viewModel.updateDepartmentsOrder(updatedDepartments)
             }
         )
         binding.departmentsRV.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = departmentAdapter
+            itemAnimator = null
         }
+        val callback = SimpleItemTouchHelperCallback(departmentAdapter)
+        itemTouchHelper = ItemTouchHelper(callback)
+        itemTouchHelper?.attachToRecyclerView(binding.departmentsRV)
     }
 
     private fun observeViewModel() {
@@ -80,7 +88,7 @@ class DepartmentsFragment : Fragment() {
     private fun showDeleteConfirmationDialog(department: Department) {
         val dialogBinding = DialogConfirmDeleteBinding.inflate(LayoutInflater.from(requireContext()))
 
-        dialogBinding.delDialLableTV.text = getString(R.string.confirm_delete_title) // "Подтверждение"
+        dialogBinding.delDialLableTV.text = getString(R.string.confirm_delete_title)
         dialogBinding.delDialInfoTV.text = getString(R.string.confirm_delete_department_message, department.departmentName)
 
         val dialog = MaterialAlertDialogBuilder(requireContext())
@@ -89,7 +97,6 @@ class DepartmentsFragment : Fragment() {
             .create()
 
         dialogBinding.delYesButton.setOnClickListener {
-            Log.d("DepartmentsFragment", "Delete confirmed for: ${department.departmentName}")
             viewModel.deleteDepartment(department)
             dialog.dismiss()
         }
@@ -101,7 +108,8 @@ class DepartmentsFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        binding.departmentsRV.adapter = null
+        itemTouchHelper?.attachToRecyclerView(null)
+        _binding?.departmentsRV?.adapter = null
         _binding = null
     }
 }

@@ -30,6 +30,16 @@ class ShoppingListItemAdapter(
         const val VIEW_TYPE_ITEM = 1
     }
 
+    override fun getItemCount(): Int {
+        return if (dragInProgress && internalList.isNotEmpty()) internalList.size else super.getItemCount()
+    }
+
+    override fun isItemDraggable(position: Int): Boolean {
+        if (position < 0 || position >= itemCount) return false
+        // В ShoppingListItemAdapter перетаскивать можно только товары
+        return getItemViewType(position) == VIEW_TYPE_ITEM
+    }
+
     override fun getItemViewType(position: Int): Int {
         val listForType = if (dragInProgress && internalList.isNotEmpty()) internalList else currentList
         if (position < 0 || position >= listForType.size) return -1
@@ -88,13 +98,7 @@ class ShoppingListItemAdapter(
         }
     }
 
-    override fun getItemCount(): Int {
-        val count = if (dragInProgress && internalList.isNotEmpty()) internalList.size else super.getItemCount()
-        return count
-    }
-
     override fun onItemMove(fromPosition: Int, toPosition: Int): Boolean {
-        Log.d("CartyDND", "Adapter onItemMove: from=$fromPosition, to=$toPosition")
         if (!dragInProgress) {
             listSnapshotBeforeDrag = ArrayList(currentList)
             internalList.clear()
@@ -112,32 +116,27 @@ class ShoppingListItemAdapter(
         val movingItem = internalList[fromPosition]
         val itemCurrentlyAtToPosition = internalList[toPosition]
 
-        // Так как getMovementFlags запрещает перетаскивание заголовков,
-        // movingItem здесь всегда будет ShoppingListItemRow.
-        // Нам нужно только убедиться, что toPosition - это тоже товар из того же отдела.
         if (movingItem !is DisplayableItem.ShoppingListItemRow) {
-            Log.e("CartyDND", "Adapter onItemMove: movingItem is not ShoppingListItemRow, this should not happen if getMovementFlags is correct.")
-            return false // Должно быть отсеяно getMovementFlags
+            return false
         }
-
-        if (itemCurrentlyAtToPosition !is DisplayableItem.ShoppingListItemRow) {
-            Log.d("CartyDND", "Adapter onItemMove: Target for item is not an item (likely a header). Rejecting.")
-            return false // Товар не может быть перемещен на позицию заголовка
-        }
-
-        // Оба элемента - товары. Проверяем, принадлежат ли они одному отделу.
-        val movingItemDeptId = movingItem.item.departmentIdAtPurchase
-        val targetItemDeptId = itemCurrentlyAtToPosition.item.departmentIdAtPurchase
-
-        val normMoving = movingItemDeptId ?: ViewShoppingListViewModel.DEPARTMENT_ID_NO_DEPARTMENT
-        val normTarget = targetItemDeptId ?: ViewShoppingListViewModel.DEPARTMENT_ID_NO_DEPARTMENT
-
-        if (normMoving != normTarget) {
-            Log.d("CartyDND", "Adapter onItemMove: Item department mismatch ($normMoving != $normTarget). Rejecting.")
+        if (itemCurrentlyAtToPosition is DisplayableItem.DepartmentHeader) {
             return false
         }
 
-        Log.d("CartyDND", "Adapter onItemMove: Item move allowed within same department.")
+        if (itemCurrentlyAtToPosition is DisplayableItem.ShoppingListItemRow) {
+            val movingItemActualDepartmentId = movingItem.item.departmentIdAtPurchase
+            val targetItemActualDepartmentId = itemCurrentlyAtToPosition.item.departmentIdAtPurchase
+
+            val normMoving = movingItemActualDepartmentId ?: ViewShoppingListViewModel.DEPARTMENT_ID_NO_DEPARTMENT
+            val normTarget = targetItemActualDepartmentId ?: ViewShoppingListViewModel.DEPARTMENT_ID_NO_DEPARTMENT
+
+            if (normMoving != normTarget) {
+                return false
+            }
+        } else {
+            return false
+        }
+
         if (fromPosition < toPosition) {
             for (i in fromPosition until toPosition) {
                 Collections.swap(internalList, i, i + 1)
@@ -152,10 +151,8 @@ class ShoppingListItemAdapter(
     }
 
     override fun onDragFinished() {
-        Log.d("CartyDND", "Adapter onDragFinished. dragInProgress: $dragInProgress")
         if (dragInProgress) {
-            val finalList = ArrayList(internalList)
-            onOrderChanged(finalList)
+            onOrderChanged(ArrayList(internalList))
         }
         dragInProgress = false
         listSnapshotBeforeDrag = null

@@ -21,6 +21,13 @@ class ShoppingListAdapter(
     private var dragInProgress = false
     private var listSnapshotBeforeDrag: List<ShoppingList>? = null
 
+    override fun getItemCount(): Int {
+        return if (dragInProgress && internalList.isNotEmpty()) internalList.size else super.getItemCount()
+    }
+
+    override fun isItemDraggable(position: Int): Boolean {
+        return position < itemCount // Все элементы можно перетаскивать
+    }
 
     override fun submitList(list: List<ShoppingList>?) {
         val listToSubmit = list ?: emptyList()
@@ -52,10 +59,6 @@ class ShoppingListAdapter(
         holder.itemView.setOnClickListener {
             onItemClicked(shoppingList)
         }
-    }
-
-    override fun getItemCount(): Int {
-        return if (dragInProgress && internalList.isNotEmpty()) internalList.size else super.getItemCount()
     }
 
     override fun onItemMove(fromPosition: Int, toPosition: Int): Boolean {

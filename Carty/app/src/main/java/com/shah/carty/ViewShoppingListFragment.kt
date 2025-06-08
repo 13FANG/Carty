@@ -68,18 +68,13 @@ class ViewShoppingListFragment : Fragment() {
                 showDeleteItemConfirmationDialog(item)
             },
             onItemClicked = { shoppingListItem ->
-                Log.d("CartyDND", "ViewShoppingListFragment - Item clicked: ${shoppingListItem.productName}")
                 showEditItemDetailsDialog(shoppingListItem)
             },
-            onHeaderClicked = { headerItem ->
-                Log.d("CartyDND", "ViewShoppingListFragment - Header clicked: ${headerItem.departmentName}")
-            },
+            onHeaderClicked = { headerItem ->},
             onOrderChanged = { updatedDisplayableItemsFromAdapter ->
-                Log.d("CartyDND", "Fragment onOrderChanged - raw updatedDisplayableItemsFromAdapter count: ${updatedDisplayableItemsFromAdapter.size}")
                 updatedDisplayableItemsFromAdapter.forEachIndexed { index, item ->
                     val itemDetails = if (item is DisplayableItem.ShoppingListItemRow) "Item: ${item.item.productName}, dept: ${item.item.departmentIdAtPurchase}, sort: ${item.item.manualSortOrder}" else if (item is DisplayableItem.DepartmentHeader) "Header: ${item.departmentName}, deptId: ${item.departmentId}" else "Unknown"
-                    Log.d("CartyDND", "  Fragment onOrderChanged - AdapterList[$index]: $itemDetails")
-                }
+                    }
                 viewModel.processAndUpdateOrder(updatedDisplayableItemsFromAdapter)
             }
         )
@@ -88,7 +83,7 @@ class ViewShoppingListFragment : Fragment() {
             adapter = shoppingListItemAdapter
             itemAnimator = null
         }
-        val callback = SimpleItemTouchHelperCallback(shoppingListItemAdapter) // Убрали второй параметр
+        val callback = SimpleItemTouchHelperCallback(shoppingListItemAdapter)
         itemTouchHelper = ItemTouchHelper(callback)
         itemTouchHelper?.attachToRecyclerView(binding.viewShoppingListRV)
     }
@@ -97,9 +92,7 @@ class ViewShoppingListFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { uiState ->
-                    Log.d("CartyDND", "Fragment observeViewModelAndSetupUI - UI State Update. DisplayableItems count: ${uiState.displayableItems.size}, Grouping: ${uiState.isGroupingEnabled}")
                     if (uiState.isLoading && uiState.displayableItems.isEmpty() && uiState.currentList == null) {
-                        Log.d("CartyDND", "Fragment observeViewModelAndSetupUI - Still loading initial or empty.")
                         return@collect
                     }
 
@@ -128,7 +121,6 @@ class ViewShoppingListFragment : Fragment() {
                     }
 
                     shoppingListItemAdapter.submitList(uiState.displayableItems)
-                    Log.d("CartyDND", "Fragment observeViewModelAndSetupUI - Submitted ${uiState.displayableItems.size} items to adapter.")
 
 
                     if (uiState.productToAdd != null && childFragmentManager.findFragmentByTag("addItemDetailsDialog") == null) {

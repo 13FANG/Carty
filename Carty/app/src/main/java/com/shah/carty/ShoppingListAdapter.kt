@@ -26,7 +26,7 @@ class ShoppingListAdapter(
     }
 
     override fun isItemDraggable(position: Int): Boolean {
-        return position < itemCount // Все элементы можно перетаскивать
+        return position < itemCount
     }
 
     override fun submitList(list: List<ShoppingList>?) {

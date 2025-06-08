@@ -54,7 +54,7 @@ class ProductsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         setupRecyclerView()
-        observeViewModelState() // Переименовал, чтобы не было путаницы с override
+        observeViewModelState()
 
         binding.addProductFAB.setOnClickListener {
             val action = ProductsFragmentDirections.actionProductsFragmentToEditProductFragment(0L)
@@ -73,7 +73,6 @@ class ProductsFragment : Fragment() {
                     findNavController().navigate(action)
                 }
             },
-            // onItemLongClicked больше нет
             onDeleteClicked = { product ->
                 if (!navigationArgs.isSelectionMode) {
                     showDeleteConfirmationDialog(product)
@@ -103,7 +102,7 @@ class ProductsFragment : Fragment() {
         }
     }
 
-    private fun observeViewModelState() { // Убрал override и переименовал
+    private fun observeViewModelState() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { uiState ->

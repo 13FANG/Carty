@@ -45,7 +45,7 @@ class DepartmentsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         setupRecyclerView()
-        observeViewModelState() // Переименовал
+        observeViewModelState()
 
         binding.addDepartmentFAB.setOnClickListener {
             val action = DepartmentsFragmentDirections.actionDepartmentsFragmentToEditDepartmentFragment(0L)
@@ -59,7 +59,6 @@ class DepartmentsFragment : Fragment() {
                 val action = DepartmentsFragmentDirections.actionDepartmentsFragmentToEditDepartmentFragment(department.departmentId)
                 findNavController().navigate(action)
             },
-            // onItemLongClicked больше нет
             onDeleteClicked = { department ->
                 showDeleteConfirmationDialog(department)
             },
@@ -77,7 +76,7 @@ class DepartmentsFragment : Fragment() {
         itemTouchHelper?.attachToRecyclerView(binding.departmentsRV)
     }
 
-    private fun observeViewModelState() { // Убрал override и переименовал
+    private fun observeViewModelState() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { uiState ->

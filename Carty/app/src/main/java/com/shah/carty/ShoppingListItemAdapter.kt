@@ -36,7 +36,6 @@ class ShoppingListItemAdapter(
 
     override fun isItemDraggable(position: Int): Boolean {
         if (position < 0 || position >= itemCount) return false
-        // В ShoppingListItemAdapter перетаскивать можно только товары
         return getItemViewType(position) == VIEW_TYPE_ITEM
     }
 

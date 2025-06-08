@@ -73,8 +73,8 @@ class ViewShoppingListViewModel(
                 val departmentOrderToUse = list.departmentOrder.ifEmpty {
                     items.mapNotNull { it.departmentIdAtPurchase }.distinct()
                         .sortedWith(compareBy<Long>(
-                            { departmentMap[it]?.lowercase() ?: "~~~" }, // "~~~" будет после всех реальных имен
-                            { it } // Дополнительная сортировка по ID для стабильности
+                            { departmentMap[it]?.lowercase() ?: "~~~" }, //
+                            { it }
                         ))
                 }
 
@@ -178,8 +178,6 @@ class ViewShoppingListViewModel(
     }
 
     fun processAndUpdateOrder(orderedDisplayableItems: List<DisplayableItem>) {
-        Log.d("CartyDND", "ViewModel processAndUpdateOrder - received ${orderedDisplayableItems.size} displayable items")
-
         val newDepartmentOrder = orderedDisplayableItems
             .filterIsInstance<DisplayableItem.DepartmentHeader>()
             .map { it.departmentId }
@@ -203,8 +201,7 @@ class ViewShoppingListViewModel(
                 }
             }
         }
-        Log.d("CartyDND", "ViewModel processAndUpdateOrder - finalShoppingListItems to update count: ${finalShoppingListItemsToSave.size}")
-        finalShoppingListItemsToSave.forEach { Log.d("CartyDND_VM_FinalItem", "Item: ${it.productName}, Dept: ${it.departmentIdAtPurchase}, SortOrder: ${it.manualSortOrder}") }
+        finalShoppingListItemsToSave.forEach {}
         updateShoppingListItemsOrderIfNeeded(finalShoppingListItemsToSave)
     }
 
@@ -212,7 +209,6 @@ class ViewShoppingListViewModel(
         val currentShoppingList = uiState.value.currentList ?: return
 
         if (currentShoppingList.departmentOrder != newDepartmentOrder) {
-            Log.d("CartyDND", "ViewModel: Updating department order in ShoppingList: $newDepartmentOrder")
             viewModelScope.launch {
                 val updatedList = currentShoppingList.copy(
                     departmentOrder = newDepartmentOrder,
@@ -220,9 +216,7 @@ class ViewShoppingListViewModel(
                 )
                 repository.updateShoppingList(updatedList)
             }
-        } else {
-            Log.d("CartyDND", "ViewModel: Department order in ShoppingList unchanged.")
-        }
+        } else {}
     }
 
     private fun updateShoppingListItemsOrderIfNeeded(processedItemsWithNewSortOrder: List<ShoppingListItem>) {
@@ -230,11 +224,8 @@ class ViewShoppingListViewModel(
             val originalItemsFromState = uiState.value.itemsInList
             var significantChangeFound = false
 
-            Log.d("CartyDND_VM_UpdateCheck", "Checking for changes. Processed count: ${processedItemsWithNewSortOrder.size}, Original count: ${originalItemsFromState.size}")
-
             if (processedItemsWithNewSortOrder.size != originalItemsFromState.size) {
                 significantChangeFound = true
-                Log.d("CartyDND_VM_UpdateCheck", "Size mismatch. Change detected.")
             } else {
                 val originalItemsMap = originalItemsFromState.associateBy { it.shoppingListItemId }
                 for (processedItem in processedItemsWithNewSortOrder) {
@@ -243,7 +234,6 @@ class ViewShoppingListViewModel(
                         originalItem.manualSortOrder != processedItem.manualSortOrder ||
                         originalItem.departmentIdAtPurchase != processedItem.departmentIdAtPurchase) {
                         significantChangeFound = true
-                        Log.d("CartyDND_VM_UpdateCheck", "Change detected for ${processedItem.productName}: oldOrder=${originalItem?.manualSortOrder}, newOrder=${processedItem.manualSortOrder}; oldDept=${originalItem?.departmentIdAtPurchase}, newDept=${processedItem.departmentIdAtPurchase}")
                         break
                     }
                 }
@@ -252,14 +242,12 @@ class ViewShoppingListViewModel(
                     val processedIdsOrder = processedItemsWithNewSortOrder.map { it.shoppingListItemId }
                     if(originalIdsOrder != processedIdsOrder && processedIdsOrder.isNotEmpty()) {
                         significantChangeFound = true
-                        Log.d("CartyDND_VM_UpdateCheck", "Order of IDs changed.")
                     }
                 }
             }
 
             if (significantChangeFound) {
-                Log.d("CartyDND_VM_Save", "ViewModel: Updating shopping list items in DB. Items being saved count: ${processedItemsWithNewSortOrder.size}")
-                processedItemsWithNewSortOrder.forEach { item -> Log.d("CartyDND_VM_Save", "  Saving: ${item.productName}, Dept: ${item.departmentIdAtPurchase}, Sort: ${item.manualSortOrder}") }
+                processedItemsWithNewSortOrder.forEach { item -> }
                 repository.updateShoppingListItems(processedItemsWithNewSortOrder)
                 uiState.value.currentList?.let { list ->
                     if (!list.isCompleted) {
@@ -267,9 +255,7 @@ class ViewShoppingListViewModel(
                         repository.updateShoppingList(updatedList)
                     }
                 }
-            } else {
-                Log.d("CartyDND", "ViewModel: Shopping list items content (manualSortOrder/departmentIdAtPurchase) or order of IDs unchanged.")
-            }
+            } else {}
         }
     }
 

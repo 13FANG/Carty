@@ -39,7 +39,6 @@ class ShoppingListsViewModel(
                 (currentDisplayedLists.minOfOrNull { it.manualSortIndex } ?: 0) - 1
             }
 
-
             val defaultName = "Новый список"
             val newList = ShoppingList(
                 shoppingListName = defaultName, ownerId = ownerId,

@@ -1,6 +1,7 @@
 package com.shah.carty
 
 import android.os.Bundle
+import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -92,13 +93,13 @@ class ShoppingListsFragment : Fragment() {
     }
 
     private fun showPopupMenu(anchor: View) {
-        val popup = PopupMenu(requireContext(), anchor)
+        val wrapper = ContextThemeWrapper(requireContext(), R.style.MyPopupMenu_White)
+        val popup = PopupMenu(wrapper, anchor)
         popup.menuInflater.inflate(R.menu.shopping_lists_menu, popup.menu)
 
         val currentUser = FirebaseAuth.getInstance().currentUser
         popup.menu.findItem(R.id.action_logout)?.isVisible = (currentUser != null)
         popup.menu.findItem(R.id.action_login)?.isVisible = (currentUser == null)
-
 
         popup.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
@@ -108,10 +109,6 @@ class ShoppingListsFragment : Fragment() {
                 }
                 R.id.action_show_departments -> {
                     findNavController().navigate(ShoppingListsFragmentDirections.actionShoppingListsFragmentToDepartmentsFragment())
-                    true
-                }
-                R.id.action_show_statistics -> {
-                    findNavController().navigate(ShoppingListsFragmentDirections.actionShoppingListsFragmentToStatisticsMainFragment())
                     true
                 }
                 R.id.action_logout -> {

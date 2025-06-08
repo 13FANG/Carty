@@ -1,5 +1,6 @@
 package com.shah.carty
 
+import android.content.Context
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverter
@@ -59,6 +60,19 @@ data class ShoppingListItem(
 enum class ProductUnit {
     PIECE, KILOGRAM, GRAM, LITER, MILLILITER, PACKAGE
 }
+
+fun ProductUnit.getDisplayName(context: Context): String {
+    val resId = when (this) {
+        ProductUnit.PIECE -> R.string.unit_piece
+        ProductUnit.KILOGRAM -> R.string.unit_kilogram
+        ProductUnit.GRAM -> R.string.unit_gram
+        ProductUnit.LITER -> R.string.unit_liter
+        ProductUnit.MILLILITER -> R.string.unit_milliliter
+        ProductUnit.PACKAGE -> R.string.unit_package
+    }
+    return context.getString(resId)
+}
+
 class Converters{
     @TypeConverter  fun fromUnit(unit: ProductUnit): String{
         return unit.name

@@ -4,8 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="2dp"
     app:cardCornerRadius="10dp"
+    android:layout_margin="2dp"
     app:cardElevation="4dp"
     app:strokeColor="#3F51B5"
     app:strokeWidth="4dp">
@@ -32,6 +32,21 @@
             app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
+            android:id="@+id/itemDepartmentNameTV"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/pf_highway_sans_pro"
+            android:textColor="#3F51B5"
+            android:textSize="24sp"
+            android:visibility="gone"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="@+id/itemNameTV"
+            app:layout_constraintStart_toStartOf="@+id/itemNameTV"
+            app:layout_constraintTop_toBottomOf="@+id/itemNameTV"
+            tools:text="Молочный отдел"
+            tools:visibility="visible" />
+
+        <TextView
             android:id="@+id/itemQuantityTV"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -43,7 +58,7 @@
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="@+id/itemNameTV"
             app:layout_constraintStart_toStartOf="@+id/itemNameTV"
-            app:layout_constraintTop_toBottomOf="@+id/itemNameTV" />
+            app:layout_constraintTop_toBottomOf="@+id/itemDepartmentNameTV" />
 
         <TextView
             android:id="@+id/itemQuantityUnitTV2"
@@ -63,8 +78,6 @@
             android:id="@+id/itemBoughtCB"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:checked="false"
-            app:buttonTint="#3F51B5"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />

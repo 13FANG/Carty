@@ -4,6 +4,7 @@
         <!-- Customize your light theme here. -->
         <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
     </style>
+
     <style name="Theme.Carty" parent="Base.Theme.Carty">
         <item name="materialAlertDialogTheme">@style/MyMaterialAlertDialogTheme</item>
     </style>
@@ -15,5 +16,10 @@
     <style name="MyDialogShapeAppearanceOverlay">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">10dp</item>
+    </style>
+
+    <style name="MyPopupMenu.White" parent="ThemeOverlay.Material3.Light">
+        <item name="android:background">@android:color/white</item>
+        <item name="colorSurface">@android:color/white</item>
     </style>
 </resources>

@@ -3,7 +3,9 @@ package com.shah.carty
 import android.graphics.Paint
 import android.util.Log
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -17,13 +19,15 @@ class ShoppingListItemAdapter(
     private val onDeleteItemClicked: (ShoppingListItem) -> Unit,
     private val onItemClicked: (ShoppingListItem) -> Unit,
     private val onHeaderClicked: (DisplayableItem.DepartmentHeader) -> Unit,
-    private val onOrderChanged: (List<DisplayableItem>) -> Unit
+    private val onOrderChanged: (List<DisplayableItem>) -> Unit,
+    private val getDepartmentName: (Long?) -> String
 ) : ListAdapter<DisplayableItem, RecyclerView.ViewHolder>(DisplayableItemDiffCallback()),
     ItemTouchHelperAdapter {
 
     private var internalList: MutableList<DisplayableItem> = mutableListOf()
     private var dragInProgress = false
     private var listSnapshotBeforeDrag: List<DisplayableItem>? = null
+    var isGroupingEnabled: Boolean = true
 
     companion object {
         const val VIEW_TYPE_HEADER = 0
@@ -89,7 +93,7 @@ class ShoppingListItemAdapter(
             }
             is ItemViewHolder -> {
                 val shoppingListItemRow = displayableItem as? DisplayableItem.ShoppingListItemRow ?: return
-                holder.bind(shoppingListItemRow.item, onItemCheckedChanged, onDeleteItemClicked)
+                holder.bind(shoppingListItemRow.item, this)
                 holder.itemView.setOnClickListener {
                     onItemClicked(shoppingListItemRow.item)
                 }
@@ -118,11 +122,11 @@ class ShoppingListItemAdapter(
         if (movingItem !is DisplayableItem.ShoppingListItemRow) {
             return false
         }
-        if (itemCurrentlyAtToPosition is DisplayableItem.DepartmentHeader) {
+        if (itemCurrentlyAtToPosition is DisplayableItem.DepartmentHeader && isGroupingEnabled) {
             return false
         }
 
-        if (itemCurrentlyAtToPosition is DisplayableItem.ShoppingListItemRow) {
+        if (itemCurrentlyAtToPosition is DisplayableItem.ShoppingListItemRow && isGroupingEnabled) {
             val movingItemActualDepartmentId = movingItem.item.departmentIdAtPurchase
             val targetItemActualDepartmentId = itemCurrentlyAtToPosition.item.departmentIdAtPurchase
 
@@ -132,8 +136,6 @@ class ShoppingListItemAdapter(
             if (normMoving != normTarget) {
                 return false
             }
-        } else {
-            return false
         }
 
         if (fromPosition < toPosition) {
@@ -171,40 +173,51 @@ class ShoppingListItemAdapter(
     class ItemViewHolder(private val binding: ItemShoppingListItemBinding) :
         RecyclerView.ViewHolder(binding.root), ItemTouchHelperViewHolder {
 
-        fun bind(
-            item: ShoppingListItem,
-            onItemCheckedChanged: (ShoppingListItem, Boolean) -> Unit,
-            onDeleteItemClicked: (ShoppingListItem) -> Unit
-        ) {
+        fun bind(item: ShoppingListItem, adapter: ShoppingListItemAdapter) {
             binding.itemNameTV.text = item.productName
-            val quantityText = "${item.quantity} ${item.unit.name.lowercase()}"
+
+            val context = itemView.context
+            val unitDisplayName = item.unit.getDisplayName(context)
+            val quantityText = "${item.quantity} $unitDisplayName"
             binding.itemQuantityTV.text = quantityText
 
-            val pricePerUnitText = item.price?.let { "%.2f руб. за %s".format(it, item.unit.name.lowercase()) } ?: "Цена не указана"
+            val pricePerUnitText = item.price?.let { "%.2f руб. за %s".format(it, unitDisplayName) } ?: "Цена не указана"
             binding.itemQuantityUnitTV2.text = pricePerUnitText
 
             binding.itemBoughtCB.setOnCheckedChangeListener(null)
             binding.itemBoughtCB.isChecked = item.isBought
 
+            if (!adapter.isGroupingEnabled) {
+                binding.itemDepartmentNameTV.isVisible = true
+                binding.itemDepartmentNameTV.text = adapter.getDepartmentName(item.departmentIdAtPurchase)
+            } else {
+                binding.itemDepartmentNameTV.isVisible = false
+            }
+
             updateTextStyle(item.isBought)
 
             binding.itemBoughtCB.setOnCheckedChangeListener { _, isChecked ->
-                onItemCheckedChanged(item, isChecked)
+                adapter.onItemCheckedChanged(item, isChecked)
                 updateTextStyle(isChecked)
             }
 
             binding.imageButton.setOnClickListener {
-                onDeleteItemClicked(item)
+                adapter.onDeleteItemClicked(item)
             }
         }
 
         private fun updateTextStyle(isBought: Boolean) {
+            val paintFlagsStrikeThru = Paint.STRIKE_THRU_TEXT_FLAG
+            val paintFlagsClear = paintFlagsStrikeThru.inv()
+
             if (isBought) {
-                binding.itemNameTV.paintFlags = binding.itemNameTV.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
-                binding.itemQuantityTV.paintFlags = binding.itemQuantityTV.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+                binding.itemNameTV.paintFlags = binding.itemNameTV.paintFlags or paintFlagsStrikeThru
+                binding.itemQuantityTV.paintFlags = binding.itemQuantityTV.paintFlags or paintFlagsStrikeThru
+                binding.itemDepartmentNameTV.paintFlags = binding.itemDepartmentNameTV.paintFlags or paintFlagsStrikeThru
             } else {
-                binding.itemNameTV.paintFlags = binding.itemNameTV.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
-                binding.itemQuantityTV.paintFlags = binding.itemQuantityTV.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
+                binding.itemNameTV.paintFlags = binding.itemNameTV.paintFlags and paintFlagsClear
+                binding.itemQuantityTV.paintFlags = binding.itemQuantityTV.paintFlags and paintFlagsClear
+                binding.itemDepartmentNameTV.paintFlags = binding.itemDepartmentNameTV.paintFlags and paintFlagsClear
             }
         }
 

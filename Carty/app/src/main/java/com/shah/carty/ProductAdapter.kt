@@ -105,7 +105,7 @@ class ProductAdapter(
         fun bind(product: Product, getDepartmentName: (Long?) -> String, onDeleteClicked: (Product) -> Unit) {
             binding.productNameTV.text = product.productName
             binding.departmentNameTV.text = getDepartmentName(product.departmentId)
-            binding.unitProductItemTV.text = product.defaultUnit.name
+            binding.unitProductItemTV.text = product.defaultUnit.getDisplayName(itemView.context)
             binding.priceTV.text = product.defaultPrice?.toString() ?: "N/A"
 
             binding.delItemProductImageButton.setOnClickListener {

@@ -20,6 +20,7 @@ import com.shah.carty.databinding.DialogAddItemDetailsBinding
 import com.shah.carty.databinding.DialogConfirmDeleteBinding
 import com.shah.carty.databinding.FragmentViewShoppingListBinding
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 class ViewShoppingListFragment : Fragment() {
 
@@ -72,10 +73,10 @@ class ViewShoppingListFragment : Fragment() {
             },
             onHeaderClicked = { headerItem ->},
             onOrderChanged = { updatedDisplayableItemsFromAdapter ->
-                updatedDisplayableItemsFromAdapter.forEachIndexed { index, item ->
-                    val itemDetails = if (item is DisplayableItem.ShoppingListItemRow) "Item: ${item.item.productName}, dept: ${item.item.departmentIdAtPurchase}, sort: ${item.item.manualSortOrder}" else if (item is DisplayableItem.DepartmentHeader) "Header: ${item.departmentName}, deptId: ${item.departmentId}" else "Unknown"
-                    }
                 viewModel.processAndUpdateOrder(updatedDisplayableItemsFromAdapter)
+            },
+            getDepartmentName = { deptId ->
+                viewModel.uiState.value.departmentMap[deptId] ?: getString(R.string.no_department_selected)
             }
         )
         binding.viewShoppingListRV.apply {
@@ -120,8 +121,15 @@ class ViewShoppingListFragment : Fragment() {
                         binding.groupProductsFAB.setImageResource(R.drawable.ic_group)
                     }
 
+                    binding.totalSumTV.text = String.format(Locale.getDefault(), "Суммарно - %.2f руб.", uiState.totalSum)
+
+                    val previousGroupingState = shoppingListItemAdapter.isGroupingEnabled
+                    shoppingListItemAdapter.isGroupingEnabled = uiState.isGroupingEnabled
                     shoppingListItemAdapter.submitList(uiState.displayableItems)
 
+                    if (previousGroupingState != uiState.isGroupingEnabled) {
+                        shoppingListItemAdapter.notifyDataSetChanged()
+                    }
 
                     if (uiState.productToAdd != null && childFragmentManager.findFragmentByTag("addItemDetailsDialog") == null) {
                         showAddItemDetailsDialog(uiState.productToAdd)

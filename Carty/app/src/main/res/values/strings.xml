@@ -20,12 +20,12 @@
     <string name="restore_data_positive_button">Загрузить</string>
     <string name="restore_data_negative_button">Начать с чистого листа</string>
     <string name="password_recovery_success_message">Письмо для восстановления отправлено.</string>
-    <string name="unit_piece">Штука</string>
-    <string name="unit_kilogram">Килограмм</string>
-    <string name="unit_gram">Грамм</string>
-    <string name="unit_liter">Литр</string>
-    <string name="unit_milliliter">Миллилитр</string>
-    <string name="unit_package">Упаковка</string>
+    <string name="unit_piece">Шт.</string>
+    <string name="unit_kilogram">Кг.</string>
+    <string name="unit_gram">Г.</string>
+    <string name="unit_liter">Л.</string>
+    <string name="unit_milliliter">Мл.</string>
+    <string name="unit_package">Уп.</string>
     <string name="no_department_selected_group">Без отдела</string>
     <string name="unknown_department">Неизвестный отдел</string>
 </resources>

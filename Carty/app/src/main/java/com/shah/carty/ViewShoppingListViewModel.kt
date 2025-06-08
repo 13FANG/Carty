@@ -44,7 +44,8 @@ data class ViewShoppingListUiState(
     val isGroupingEnabled: Boolean = true,
     val isLoading: Boolean = true,
     val listNotFound: Boolean = false,
-    val productToAdd: Product? = null
+    val productToAdd: Product? = null,
+    val totalSum: Double = 0.0
 )
 
 class ViewShoppingListViewModel(
@@ -68,12 +69,16 @@ class ViewShoppingListViewModel(
         val departmentMap = allDepartments.associateBy({ it.departmentId }, { it.departmentName })
         val displayableItemsResult = mutableListOf<DisplayableItem>()
 
+        val totalSum = items.sumOf { item ->
+            (item.price ?: 0.0) * item.quantity
+        }
+
         if (list != null) {
             if (isGroupingEnabled) {
                 val departmentOrderToUse = list.departmentOrder.ifEmpty {
                     items.mapNotNull { it.departmentIdAtPurchase }.distinct()
                         .sortedWith(compareBy<Long>(
-                            { departmentMap[it]?.lowercase() ?: "~~~" }, //
+                            { departmentMap[it]?.lowercase() ?: "~~~" },
                             { it }
                         ))
                 }
@@ -150,7 +155,8 @@ class ViewShoppingListViewModel(
             isGroupingEnabled = isGroupingEnabled,
             isLoading = false,
             listNotFound = (list == null && !isLoadingInitial && items.any { it.shoppingListId == shoppingListId }),
-            productToAdd = productToAdd
+            productToAdd = productToAdd,
+            totalSum = totalSum
         )
     }.stateIn(
         scope = viewModelScope,

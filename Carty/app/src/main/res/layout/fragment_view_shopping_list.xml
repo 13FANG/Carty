@@ -22,9 +22,9 @@
         android:textSize="28sp"
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_chainStyle="spread"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/viewShoppingListRV"
@@ -58,7 +58,7 @@
             android:backgroundTint="#3F51B5"
             android:clickable="true"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/FinishListFAB"
+            app:layout_constraintEnd_toStartOf="@+id/groupProductsFAB"
             app:layout_constraintHorizontal_chainStyle="spread_inside"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
@@ -67,7 +67,7 @@
             app:tint="#FFFFFF" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/FinishListFAB"
+            android:id="@+id/groupProductsFAB"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
@@ -79,7 +79,7 @@
             app:layout_constraintStart_toEndOf="@+id/addProductToListFAB"
             app:layout_constraintTop_toTopOf="parent"
             app:maxImageSize="32dp"
-            app:srcCompat="@drawable/checkicon"
+            app:srcCompat="@drawable/ic_group"
             app:tint="#FFFFFF" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -91,11 +91,27 @@
             android:backgroundTint="#3F51B5"
             android:clickable="true"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/deleteListFAB"
-            app:layout_constraintStart_toEndOf="@+id/FinishListFAB"
+            app:layout_constraintEnd_toStartOf="@+id/finishListFAB"
+            app:layout_constraintStart_toEndOf="@+id/groupProductsFAB"
             app:layout_constraintTop_toTopOf="parent"
             app:maxImageSize="32dp"
             app:srcCompat="@drawable/notfavoriteicon"
+            app:tint="#FFFFFF" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/finishListFAB"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="24dp"
+            android:backgroundTint="#3F51B5"
+            android:clickable="true"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/deleteListFAB"
+            app:layout_constraintStart_toEndOf="@+id/toOrFromFavoriteFAB"
+            app:layout_constraintTop_toTopOf="parent"
+            app:maxImageSize="32dp"
+            app:srcCompat="@drawable/checkicon"
             app:tint="#FFFFFF" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -109,8 +125,9 @@
             android:clickable="true"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/toOrFromFavoriteFAB"
+            app:layout_constraintStart_toEndOf="@+id/finishListFAB"
             app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="1.0"
             app:maxImageSize="32dp"
             app:srcCompat="@drawable/binicon"
             app:tint="#FFFFFF" />

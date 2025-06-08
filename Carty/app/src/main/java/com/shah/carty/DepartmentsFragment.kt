@@ -1,6 +1,7 @@
 package com.shah.carty
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -44,7 +45,7 @@ class DepartmentsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         setupRecyclerView()
-        observeViewModel()
+        observeViewModelState() // Переименовал
 
         binding.addDepartmentFAB.setOnClickListener {
             val action = DepartmentsFragmentDirections.actionDepartmentsFragmentToEditDepartmentFragment(0L)
@@ -58,6 +59,7 @@ class DepartmentsFragment : Fragment() {
                 val action = DepartmentsFragmentDirections.actionDepartmentsFragmentToEditDepartmentFragment(department.departmentId)
                 findNavController().navigate(action)
             },
+            // onItemLongClicked больше нет
             onDeleteClicked = { department ->
                 showDeleteConfirmationDialog(department)
             },
@@ -75,7 +77,7 @@ class DepartmentsFragment : Fragment() {
         itemTouchHelper?.attachToRecyclerView(binding.departmentsRV)
     }
 
-    private fun observeViewModel() {
+    private fun observeViewModelState() { // Убрал override и переименовал
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { uiState ->

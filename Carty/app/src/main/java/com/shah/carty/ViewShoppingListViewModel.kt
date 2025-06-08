@@ -1,5 +1,6 @@
 package com.shah.carty
 
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,7 +10,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -66,41 +66,55 @@ class ViewShoppingListViewModel(
         _isGroupingEnabled.asStateFlow()
     ) { list, items, allDepartments, productToAdd, isGroupingEnabled ->
         val departmentMap = allDepartments.associateBy({ it.departmentId }, { it.departmentName })
-        val displayableItems = mutableListOf<DisplayableItem>()
+        val displayableItemsResult = mutableListOf<DisplayableItem>()
 
         if (list != null) {
             if (isGroupingEnabled) {
-                list.departmentOrder.forEach { deptId ->
+                val departmentOrderToUse = list.departmentOrder.ifEmpty {
+                    items.mapNotNull { it.departmentIdAtPurchase }.distinct()
+                        .sortedWith(compareBy<Long>(
+                            { departmentMap[it]?.lowercase() ?: "~~~" }, // "~~~" будет после всех реальных имен
+                            { it } // Дополнительная сортировка по ID для стабильности
+                        ))
+                }
+
+                departmentOrderToUse.forEach { deptId ->
                     val itemsInThisDept = items.filter { it.departmentIdAtPurchase == deptId }
                         .sortedBy { it.manualSortOrder }
-                    if (itemsInThisDept.isNotEmpty()) {
-                        displayableItems.add(
+                    if (itemsInThisDept.isNotEmpty() || list.departmentOrder.contains(deptId)) {
+                        displayableItemsResult.add(
                             DisplayableItem.DepartmentHeader(
                                 deptId,
-                                departmentMap[deptId] ?: "Отдел не найден"
+                                departmentMap[deptId] ?: application.getString(R.string.unknown_department)
                             )
                         )
                         itemsInThisDept.forEach { item ->
-                            displayableItems.add(DisplayableItem.ShoppingListItemRow(item))
+                            displayableItemsResult.add(DisplayableItem.ShoppingListItemRow(item))
                         }
                     }
                 }
-                val departmentsInOrder = list.departmentOrder.toSet()
+
+                val departmentsInProcessedOrderSet = departmentOrderToUse.toSet()
                 val remainingItemsByDept = items
-                    .filter { it.departmentIdAtPurchase != null && it.departmentIdAtPurchase !in departmentsInOrder }
+                    .filter { it.departmentIdAtPurchase != null && it.departmentIdAtPurchase !in departmentsInProcessedOrderSet }
                     .groupBy { it.departmentIdAtPurchase }
 
-                remainingItemsByDept.keys.sortedBy { departmentMap[it] ?: "" }.forEach { deptId ->
+                remainingItemsByDept.keys.filterNotNull().sortedWith(
+                    compareBy<Long>(
+                        { departmentMap[it]?.lowercase() ?: "~~~" },
+                        { it }
+                    )
+                ).forEach { deptId ->
                     val itemsInThisDept = remainingItemsByDept[deptId]?.sortedBy { it.manualSortOrder }
-                    if (itemsInThisDept?.isNotEmpty() == true && deptId != null) {
-                        displayableItems.add(
+                    if (itemsInThisDept?.isNotEmpty() == true) {
+                        displayableItemsResult.add(
                             DisplayableItem.DepartmentHeader(
                                 deptId,
-                                departmentMap[deptId] ?: "Отдел не найден"
+                                departmentMap[deptId] ?: application.getString(R.string.unknown_department)
                             )
                         )
                         itemsInThisDept.forEach { item ->
-                            displayableItems.add(DisplayableItem.ShoppingListItemRow(item))
+                            displayableItemsResult.add(DisplayableItem.ShoppingListItemRow(item))
                         }
                     }
                 }
@@ -108,20 +122,22 @@ class ViewShoppingListViewModel(
                 val itemsWithoutDepartment = items.filter { it.departmentIdAtPurchase == null }
                     .sortedBy { it.manualSortOrder }
                 if (itemsWithoutDepartment.isNotEmpty()) {
-                    displayableItems.add(
-                        DisplayableItem.DepartmentHeader(
-                            DEPARTMENT_ID_NO_DEPARTMENT,
-                            application.getString(R.string.no_department_selected_group)
+                    if (displayableItemsResult.none { it is DisplayableItem.DepartmentHeader && it.departmentId == DEPARTMENT_ID_NO_DEPARTMENT}) {
+                        displayableItemsResult.add(
+                            DisplayableItem.DepartmentHeader(
+                                DEPARTMENT_ID_NO_DEPARTMENT,
+                                application.getString(R.string.no_department_selected_group)
+                            )
                         )
-                    )
+                    }
                     itemsWithoutDepartment.forEach { item ->
-                        displayableItems.add(DisplayableItem.ShoppingListItemRow(item))
+                        displayableItemsResult.add(DisplayableItem.ShoppingListItemRow(item))
                     }
                 }
 
             } else {
                 items.sortedBy { it.manualSortOrder }.forEach { item ->
-                    displayableItems.add(DisplayableItem.ShoppingListItemRow(item))
+                    displayableItemsResult.add(DisplayableItem.ShoppingListItemRow(item))
                 }
             }
         }
@@ -129,7 +145,7 @@ class ViewShoppingListViewModel(
         ViewShoppingListUiState(
             currentList = list,
             itemsInList = items,
-            displayableItems = displayableItems,
+            displayableItems = displayableItemsResult,
             departmentMap = departmentMap,
             isGroupingEnabled = isGroupingEnabled,
             isLoading = false,
@@ -142,11 +158,18 @@ class ViewShoppingListViewModel(
         initialValue = ViewShoppingListUiState(isLoading = true)
     )
     private var isLoadingInitial = true
+    private val _departmentMapState = MutableStateFlow<Map<Long, String>>(emptyMap())
+
 
     init {
         viewModelScope.launch {
             repository.getShoppingListById(shoppingListId).first()
             isLoadingInitial = false
+        }
+        viewModelScope.launch {
+            repository.getAllDepartmentsList().collect { departments ->
+                _departmentMapState.value = departments.associateBy({ dep -> dep.departmentId }, { dep -> dep.departmentName })
+            }
         }
     }
 
@@ -154,68 +177,90 @@ class ViewShoppingListViewModel(
         _isGroupingEnabled.value = !_isGroupingEnabled.value
     }
 
-    fun updateDepartmentOrder(orderedDepartmentIds: List<Long>) {
-        uiState.value.currentList?.let { list ->
-            if (list.departmentOrder != orderedDepartmentIds) {
-                viewModelScope.launch {
-                    val updatedList = list.copy(
-                        departmentOrder = orderedDepartmentIds,
-                        updatedAt = System.currentTimeMillis()
+    fun processAndUpdateOrder(orderedDisplayableItems: List<DisplayableItem>) {
+        Log.d("CartyDND", "ViewModel processAndUpdateOrder - received ${orderedDisplayableItems.size} displayable items")
+
+        val newDepartmentOrder = orderedDisplayableItems
+            .filterIsInstance<DisplayableItem.DepartmentHeader>()
+            .map { it.departmentId }
+            .filter { it != DEPARTMENT_ID_NO_DEPARTMENT }
+        updateDepartmentOrderIfNeeded(newDepartmentOrder)
+
+        val finalShoppingListItemsToSave = mutableListOf<ShoppingListItem>()
+        var orderInDept = 0
+
+        orderedDisplayableItems.forEach { displayable ->
+            when (displayable) {
+                is DisplayableItem.DepartmentHeader -> {
+                    orderInDept = 0
+                }
+                is DisplayableItem.ShoppingListItemRow -> {
+                    finalShoppingListItemsToSave.add(
+                        displayable.item.copy(
+                            manualSortOrder = orderInDept++
+                        )
                     )
-                    repository.updateShoppingList(updatedList)
                 }
             }
+        }
+        Log.d("CartyDND", "ViewModel processAndUpdateOrder - finalShoppingListItems to update count: ${finalShoppingListItemsToSave.size}")
+        finalShoppingListItemsToSave.forEach { Log.d("CartyDND_VM_FinalItem", "Item: ${it.productName}, Dept: ${it.departmentIdAtPurchase}, SortOrder: ${it.manualSortOrder}") }
+        updateShoppingListItemsOrderIfNeeded(finalShoppingListItemsToSave)
+    }
+
+    private fun updateDepartmentOrderIfNeeded(newDepartmentOrder: List<Long>) {
+        val currentShoppingList = uiState.value.currentList ?: return
+
+        if (currentShoppingList.departmentOrder != newDepartmentOrder) {
+            Log.d("CartyDND", "ViewModel: Updating department order in ShoppingList: $newDepartmentOrder")
+            viewModelScope.launch {
+                val updatedList = currentShoppingList.copy(
+                    departmentOrder = newDepartmentOrder,
+                    updatedAt = System.currentTimeMillis()
+                )
+                repository.updateShoppingList(updatedList)
+            }
+        } else {
+            Log.d("CartyDND", "ViewModel: Department order in ShoppingList unchanged.")
         }
     }
 
-    fun updateShoppingListItemsOrder(processedItemsFromFragment: List<ShoppingListItem>) {
-        android.util.Log.d("CartyDND", "ViewModel updateShoppingListItemsOrder - received ${processedItemsFromFragment.size} items")
-        processedItemsFromFragment.forEach { item ->
-            android.util.Log.d("CartyDND", "ViewModel updateShoppingListItemsOrder - item: $item")
-        }
-
+    private fun updateShoppingListItemsOrderIfNeeded(processedItemsWithNewSortOrder: List<ShoppingListItem>) {
         viewModelScope.launch {
-            val originalItemsFromUiState = uiState.value.itemsInList
-            val itemsToPersistInDb = mutableListOf<ShoppingListItem>()
-            var hasAnythingChanged = false
+            val originalItemsFromState = uiState.value.itemsInList
+            var significantChangeFound = false
 
-            if (processedItemsFromFragment.size != originalItemsFromUiState.size) {
-                hasAnythingChanged = true
-                // Если размеры разные, это уже изменение, просто используем новый список
-                itemsToPersistInDb.addAll(processedItemsFromFragment)
+            Log.d("CartyDND_VM_UpdateCheck", "Checking for changes. Processed count: ${processedItemsWithNewSortOrder.size}, Original count: ${originalItemsFromState.size}")
+
+            if (processedItemsWithNewSortOrder.size != originalItemsFromState.size) {
+                significantChangeFound = true
+                Log.d("CartyDND_VM_UpdateCheck", "Size mismatch. Change detected.")
             } else {
-                // Размеры одинаковы, сравниваем элементы
-                for (i in processedItemsFromFragment.indices) {
-                    val processedItem = processedItemsFromFragment[i]
-                    // Ищем соответствующий оригинальный элемент по ID, так как порядок мог измениться
-                    val originalItem = originalItemsFromUiState.find { it.shoppingListItemId == processedItem.shoppingListItemId }
-
-                    if (originalItem == null) { // Элемент появился? Не должно быть при drag-drop
-                        hasAnythingChanged = true
-                        itemsToPersistInDb.add(processedItem) // Добавляем как есть
-                    } else {
-                        if (originalItem.manualSortOrder != processedItem.manualSortOrder ||
-                            originalItem.departmentIdAtPurchase != processedItem.departmentIdAtPurchase) {
-                            hasAnythingChanged = true
-                        }
-                        itemsToPersistInDb.add(processedItem) // Добавляем обработанный элемент (с новым sortOrder, и тем departmentId, что пришел)
+                val originalItemsMap = originalItemsFromState.associateBy { it.shoppingListItemId }
+                for (processedItem in processedItemsWithNewSortOrder) {
+                    val originalItem = originalItemsMap[processedItem.shoppingListItemId]
+                    if (originalItem == null ||
+                        originalItem.manualSortOrder != processedItem.manualSortOrder ||
+                        originalItem.departmentIdAtPurchase != processedItem.departmentIdAtPurchase) {
+                        significantChangeFound = true
+                        Log.d("CartyDND_VM_UpdateCheck", "Change detected for ${processedItem.productName}: oldOrder=${originalItem?.manualSortOrder}, newOrder=${processedItem.manualSortOrder}; oldDept=${originalItem?.departmentIdAtPurchase}, newDept=${processedItem.departmentIdAtPurchase}")
+                        break
                     }
                 }
-                // Если порядок элементов изменился, но сами элементы (содержимое) нет, hasAnythingChanged может быть false.
-                // Нам нужно проверить, изменился ли сам порядок ID.
-                if (!hasAnythingChanged) {
-                    val originalIdsOrder = originalItemsFromUiState.map { it.shoppingListItemId }
-                    val processedIdsOrder = processedItemsFromFragment.map { it.shoppingListItemId }
-                    if (originalIdsOrder != processedIdsOrder) {
-                        hasAnythingChanged = true
+                if (!significantChangeFound) {
+                    val originalIdsOrder = originalItemsFromState.map { it.shoppingListItemId }
+                    val processedIdsOrder = processedItemsWithNewSortOrder.map { it.shoppingListItemId }
+                    if(originalIdsOrder != processedIdsOrder && processedIdsOrder.isNotEmpty()) {
+                        significantChangeFound = true
+                        Log.d("CartyDND_VM_UpdateCheck", "Order of IDs changed.")
                     }
                 }
             }
 
-            android.util.Log.d("CartyDND", "ViewModel updateShoppingListItemsOrder - hasAnythingChanged: $hasAnythingChanged")
-            if (hasAnythingChanged) {
-                android.util.Log.d("CartyDND", "ViewModel updateShoppingListItemsOrder - Persisting ${itemsToPersistInDb.size} items: $itemsToPersistInDb")
-                repository.updateShoppingListItems(itemsToPersistInDb) // Передаем полный список в новом порядке
+            if (significantChangeFound) {
+                Log.d("CartyDND_VM_Save", "ViewModel: Updating shopping list items in DB. Items being saved count: ${processedItemsWithNewSortOrder.size}")
+                processedItemsWithNewSortOrder.forEach { item -> Log.d("CartyDND_VM_Save", "  Saving: ${item.productName}, Dept: ${item.departmentIdAtPurchase}, Sort: ${item.manualSortOrder}") }
+                repository.updateShoppingListItems(processedItemsWithNewSortOrder)
                 uiState.value.currentList?.let { list ->
                     if (!list.isCompleted) {
                         val updatedList = list.copy(updatedAt = System.currentTimeMillis())
@@ -223,7 +268,7 @@ class ViewShoppingListViewModel(
                     }
                 }
             } else {
-                android.util.Log.d("CartyDND", "ViewModel updateShoppingListItemsOrder - No changes detected to persist.")
+                Log.d("CartyDND", "ViewModel: Shopping list items content (manualSortOrder/departmentIdAtPurchase) or order of IDs unchanged.")
             }
         }
     }
@@ -332,28 +377,29 @@ class ViewShoppingListViewModel(
 
     fun confirmAddProductToList(quantity: Double, price: Double?, unit: ProductUnit) {
         val product = _productToAddStateFlow.value
-        val listId = uiState.value.currentList?.shoppingListId
+        val currentShoppingList = uiState.value.currentList
         val ownerId = application.getCurrentUserId()
 
-        if (product != null && listId != null) {
+        if (product != null && currentShoppingList != null) {
             viewModelScope.launch {
-                val currentDisplayableItems = uiState.value.displayableItems
-                val newSortOrder: Int
+                val currentDisplayableItemsValue = uiState.value.displayableItems
+                val isGroupingCurrentlyEnabled = _isGroupingEnabled.value
+                var newSortOrder = 0
 
-                if (_isGroupingEnabled.value) {
+                if (isGroupingCurrentlyEnabled) {
                     val departmentIdForNewItem = product.departmentId
-                    val itemsInSameDepartment = currentDisplayableItems
+                    val itemsInSameDepartment = currentDisplayableItemsValue
                         .filterIsInstance<DisplayableItem.ShoppingListItemRow>()
                         .filter { it.item.departmentIdAtPurchase == departmentIdForNewItem }
                     newSortOrder = (itemsInSameDepartment.maxOfOrNull { it.item.manualSortOrder } ?: -1) + 1
                 } else {
-                    newSortOrder = (currentDisplayableItems
+                    newSortOrder = (currentDisplayableItemsValue
                         .filterIsInstance<DisplayableItem.ShoppingListItemRow>()
                         .maxOfOrNull { it.item.manualSortOrder } ?: -1) + 1
                 }
 
                 val newItem = ShoppingListItem(
-                    shoppingListId = listId,
+                    shoppingListId = currentShoppingList.shoppingListId,
                     productId = product.productId,
                     productName = product.productName,
                     quantity = if (quantity > 0) quantity else 1.0,
@@ -367,11 +413,9 @@ class ViewShoppingListViewModel(
                 )
                 repository.addShoppingListItem(newItem)
                 clearProductToAdd()
-                uiState.value.currentList?.let { list ->
-                    if (!list.isCompleted) {
-                        val updatedList = list.copy(updatedAt = System.currentTimeMillis())
-                        repository.updateShoppingList(updatedList)
-                    }
+                if (!currentShoppingList.isCompleted) {
+                    val updatedList = currentShoppingList.copy(updatedAt = System.currentTimeMillis())
+                    repository.updateShoppingList(updatedList)
                 }
             }
         }

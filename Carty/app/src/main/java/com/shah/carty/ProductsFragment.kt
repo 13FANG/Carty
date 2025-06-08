@@ -1,6 +1,7 @@
 package com.shah.carty
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -53,7 +54,7 @@ class ProductsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         setupRecyclerView()
-        observeViewModel()
+        observeViewModelState() // Переименовал, чтобы не было путаницы с override
 
         binding.addProductFAB.setOnClickListener {
             val action = ProductsFragmentDirections.actionProductsFragmentToEditProductFragment(0L)
@@ -72,6 +73,7 @@ class ProductsFragment : Fragment() {
                     findNavController().navigate(action)
                 }
             },
+            // onItemLongClicked больше нет
             onDeleteClicked = { product ->
                 if (!navigationArgs.isSelectionMode) {
                     showDeleteConfirmationDialog(product)
@@ -81,7 +83,9 @@ class ProductsFragment : Fragment() {
                 viewModel.getDepartmentNameById(departmentId)
             },
             onOrderChanged = { updatedProducts ->
-                viewModel.updateProductsOrder(updatedProducts)
+                if (!navigationArgs.isSelectionMode) {
+                    viewModel.updateProductsOrder(updatedProducts)
+                }
             }
         )
         binding.allProductsRV.apply {
@@ -89,12 +93,17 @@ class ProductsFragment : Fragment() {
             adapter = productAdapter
             itemAnimator = null
         }
+
         val callback = SimpleItemTouchHelperCallback(productAdapter)
         itemTouchHelper = ItemTouchHelper(callback)
-        itemTouchHelper?.attachToRecyclerView(binding.allProductsRV)
+        if (!navigationArgs.isSelectionMode) {
+            itemTouchHelper?.attachToRecyclerView(binding.allProductsRV)
+        } else {
+            itemTouchHelper?.attachToRecyclerView(null)
+        }
     }
 
-    private fun observeViewModel() {
+    private fun observeViewModelState() { // Убрал override и переименовал
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { uiState ->

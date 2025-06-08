@@ -38,25 +38,17 @@ class ShoppingListItemAdapter(
 
     override fun submitList(list: List<DisplayableItem>?) {
         val listToSubmit = list ?: emptyList()
-        Log.d("CartyDND", "Adapter submitList called. dragInProgress: $dragInProgress. List size: ${listToSubmit.size}. CurrentList size: ${currentList.size}")
         super.submitList(listToSubmit)
         if (!dragInProgress) {
             internalList = ArrayList(listToSubmit)
-            Log.d("CartyDND", "Adapter submitList: dragInProgress is false. internalList updated from submitted list. internalList size: ${internalList.size}")
-        } else {
-            Log.d("CartyDND", "Adapter submitList: dragInProgress is true, internalList NOT updated from submitted list. internalList size: ${internalList.size}")
         }
     }
 
     override fun submitList(list: List<DisplayableItem>?, commitCallback: Runnable?) {
         val listToSubmit = list ?: emptyList()
-        Log.d("CartyDND", "Adapter submitList (with callback) called. dragInProgress: $dragInProgress. List size: ${listToSubmit.size}. CurrentList size: ${currentList.size}")
         super.submitList(listToSubmit, commitCallback)
         if (!dragInProgress) {
             internalList = ArrayList(listToSubmit)
-            Log.d("CartyDND", "Adapter submitList (with callback): dragInProgress is false. internalList updated. internalList size: ${internalList.size}")
-        } else {
-            Log.d("CartyDND", "Adapter submitList (with callback): dragInProgress is true, internalList NOT updated. internalList size: ${internalList.size}")
         }
     }
 
@@ -98,14 +90,15 @@ class ShoppingListItemAdapter(
 
     override fun getItemCount(): Int {
         val count = if (dragInProgress && internalList.isNotEmpty()) internalList.size else super.getItemCount()
-        Log.d("CartyDND_Count", "getItemCount: $count, dragInProgress: $dragInProgress, internalListSize: ${internalList.size}, super.getItemCount: ${super.getItemCount()}")
         return count
     }
 
     override fun onItemMove(fromPosition: Int, toPosition: Int): Boolean {
+        Log.d("CartyDND", "Adapter onItemMove: from=$fromPosition, to=$toPosition")
         if (!dragInProgress) {
+            listSnapshotBeforeDrag = ArrayList(currentList)
             internalList.clear()
-            internalList.addAll(currentList)
+            internalList.addAll(listSnapshotBeforeDrag!!)
             dragInProgress = true
         }
 
@@ -119,61 +112,53 @@ class ShoppingListItemAdapter(
         val movingItem = internalList[fromPosition]
         val itemCurrentlyAtToPosition = internalList[toPosition]
 
-        val movingItemName = if (movingItem is DisplayableItem.ShoppingListItemRow) movingItem.item.productName else if (movingItem is DisplayableItem.DepartmentHeader) movingItem.departmentName else "Unknown"
-        val targetItemName = if (itemCurrentlyAtToPosition is DisplayableItem.ShoppingListItemRow) itemCurrentlyAtToPosition.item.productName else if (itemCurrentlyAtToPosition is DisplayableItem.DepartmentHeader) itemCurrentlyAtToPosition.departmentName else "Unknown"
-        Log.d("CartyDND", "onItemMove: from=$fromPosition ($movingItemName), to=$toPosition ($targetItemName)")
-
-        if (movingItem is DisplayableItem.DepartmentHeader) {
-            if (itemCurrentlyAtToPosition !is DisplayableItem.DepartmentHeader) {
-                Log.d("CartyDND", "  Reject: Header cannot move onto Item.")
-                return false
-            }
-        } else if (movingItem is DisplayableItem.ShoppingListItemRow) {
-            val movingItemActualDepartmentId = movingItem.item.departmentIdAtPurchase
-
-            if (itemCurrentlyAtToPosition is DisplayableItem.DepartmentHeader) {
-                Log.d("CartyDND", "  Reject: Item cannot move onto Header position.")
-                return false
-            } else if (itemCurrentlyAtToPosition is DisplayableItem.ShoppingListItemRow) {
-                val targetItemActualDepartmentId = itemCurrentlyAtToPosition.item.departmentIdAtPurchase
-
-                val normMoving = movingItemActualDepartmentId ?: ViewShoppingListViewModel.DEPARTMENT_ID_NO_DEPARTMENT
-                val normTarget = targetItemActualDepartmentId ?: ViewShoppingListViewModel.DEPARTMENT_ID_NO_DEPARTMENT
-
-                Log.d("CartyDND", "  ItemMove: Moving product from dept $normMoving. Target item is product in dept $normTarget.")
-
-                if (normMoving != normTarget) {
-                    Log.d("CartyDND", "  Reject: Product department mismatch ($normMoving != $normTarget).")
-                    return false
-                }
-            } else {
-                Log.e("CartyDND", "  ERROR: Target item at toPosition is unknown type for product move! Reject.")
-                return false
-            }
+        // Так как getMovementFlags запрещает перетаскивание заголовков,
+        // movingItem здесь всегда будет ShoppingListItemRow.
+        // Нам нужно только убедиться, что toPosition - это тоже товар из того же отдела.
+        if (movingItem !is DisplayableItem.ShoppingListItemRow) {
+            Log.e("CartyDND", "Adapter onItemMove: movingItem is not ShoppingListItemRow, this should not happen if getMovementFlags is correct.")
+            return false // Должно быть отсеяно getMovementFlags
         }
 
-        Log.d("CartyDND", "  Allowing move. Performing internal list update and notifying.")
-        val itemToMove = internalList.removeAt(fromPosition)
-        internalList.add(toPosition, itemToMove)
+        if (itemCurrentlyAtToPosition !is DisplayableItem.ShoppingListItemRow) {
+            Log.d("CartyDND", "Adapter onItemMove: Target for item is not an item (likely a header). Rejecting.")
+            return false // Товар не может быть перемещен на позицию заголовка
+        }
+
+        // Оба элемента - товары. Проверяем, принадлежат ли они одному отделу.
+        val movingItemDeptId = movingItem.item.departmentIdAtPurchase
+        val targetItemDeptId = itemCurrentlyAtToPosition.item.departmentIdAtPurchase
+
+        val normMoving = movingItemDeptId ?: ViewShoppingListViewModel.DEPARTMENT_ID_NO_DEPARTMENT
+        val normTarget = targetItemDeptId ?: ViewShoppingListViewModel.DEPARTMENT_ID_NO_DEPARTMENT
+
+        if (normMoving != normTarget) {
+            Log.d("CartyDND", "Adapter onItemMove: Item department mismatch ($normMoving != $normTarget). Rejecting.")
+            return false
+        }
+
+        Log.d("CartyDND", "Adapter onItemMove: Item move allowed within same department.")
+        if (fromPosition < toPosition) {
+            for (i in fromPosition until toPosition) {
+                Collections.swap(internalList, i, i + 1)
+            }
+        } else {
+            for (i in fromPosition downTo toPosition + 1) {
+                Collections.swap(internalList, i, i - 1)
+            }
+        }
         notifyItemMoved(fromPosition, toPosition)
         return true
     }
 
     override fun onDragFinished() {
-        Log.d("CartyDND", "onDragFinished CALLED. dragInProgress: $dragInProgress")
+        Log.d("CartyDND", "Adapter onDragFinished. dragInProgress: $dragInProgress")
         if (dragInProgress) {
             val finalList = ArrayList(internalList)
-            Log.d("CartyDND", "onDragFinished: Calling onOrderChanged with finalList size: ${finalList.size}")
             onOrderChanged(finalList)
-
-            // Немедленно обновляем адаптер этим же списком, чтобы зафиксировать визуальное состояние.
-            // Это может помочь, если обновление от ViewModel приходит с задержкой или вызывает конфликт DiffUtil.
-            // Но это также может вызвать двойное применение списка, если ViewModel быстро отреагирует.
-            // super.submitList(finalList, null) // Пока закомментируем, посмотрим на эффект без этого.
         }
         dragInProgress = false
-        listSnapshotBeforeDrag = null // Очищаем снимок
-        Log.d("CartyDND", "onDragFinished: dragInProgress set to false.")
+        listSnapshotBeforeDrag = null
     }
 
     override fun onItemDismiss(position: Int) {}

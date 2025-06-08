@@ -68,56 +68,19 @@ class ViewShoppingListFragment : Fragment() {
                 showDeleteItemConfirmationDialog(item)
             },
             onItemClicked = { shoppingListItem ->
-                Log.d("CartyDebug", "ViewShoppingListFragment - Item clicked: ${shoppingListItem.productName}")
+                Log.d("CartyDND", "ViewShoppingListFragment - Item clicked: ${shoppingListItem.productName}")
                 showEditItemDetailsDialog(shoppingListItem)
             },
             onHeaderClicked = { headerItem ->
-                Log.d("CartyDebug", "ViewShoppingListFragment - Header clicked: ${headerItem.departmentName}")
+                Log.d("CartyDND", "ViewShoppingListFragment - Header clicked: ${headerItem.departmentName}")
             },
-            onOrderChanged = { updatedDisplayableItems ->
-                android.util.Log.d("CartyDND", "Fragment onOrderChanged - updatedDisplayableItems count: ${updatedDisplayableItems.size}")
-                // Логируем каждый элемент из internalList адаптера, который пришел сюда
-                updatedDisplayableItems.forEachIndexed { index, dispItem ->
-                    if (dispItem is DisplayableItem.ShoppingListItemRow) {
-                        android.util.Log.d("CartyDND", "  In onOrderChanged - internalList item: ${dispItem.item.productName}, deptId: ${dispItem.item.departmentIdAtPurchase}")
-                    } else if (dispItem is DisplayableItem.DepartmentHeader) {
-                        android.util.Log.d("CartyDND", "  In onOrderChanged - internalList header: ${dispItem.departmentName}, deptId: ${dispItem.departmentId}")
-                    }
+            onOrderChanged = { updatedDisplayableItemsFromAdapter ->
+                Log.d("CartyDND", "Fragment onOrderChanged - raw updatedDisplayableItemsFromAdapter count: ${updatedDisplayableItemsFromAdapter.size}")
+                updatedDisplayableItemsFromAdapter.forEachIndexed { index, item ->
+                    val itemDetails = if (item is DisplayableItem.ShoppingListItemRow) "Item: ${item.item.productName}, dept: ${item.item.departmentIdAtPurchase}, sort: ${item.item.manualSortOrder}" else if (item is DisplayableItem.DepartmentHeader) "Header: ${item.departmentName}, deptId: ${item.departmentId}" else "Unknown"
+                    Log.d("CartyDND", "  Fragment onOrderChanged - AdapterList[$index]: $itemDetails")
                 }
-
-                val newDepartmentOrder = updatedDisplayableItems
-                    .filterIsInstance<DisplayableItem.DepartmentHeader>()
-                    .map { it.departmentId }
-                    .filter { it != ViewShoppingListViewModel.DEPARTMENT_ID_NO_DEPARTMENT }
-                viewModel.updateDepartmentOrder(newDepartmentOrder)
-
-                val itemsWithNewSortOrderOnly = mutableListOf<ShoppingListItem>()
-                var orderInCurrentGroup = 0
-                var currentProcessingDeptId: Long? = null // Отдел текущей группы при обходе updatedDisplayableItems
-
-                updatedDisplayableItems.forEach { displayable ->
-                    when (displayable) {
-                        is DisplayableItem.DepartmentHeader -> {
-                            orderInCurrentGroup = 0
-                            currentProcessingDeptId = if (displayable.departmentId == ViewShoppingListViewModel.DEPARTMENT_ID_NO_DEPARTMENT) null else displayable.departmentId
-                            android.util.Log.d("CartyDND", "  Processing Header in Fragment: ${displayable.departmentName}. currentProcessingDeptId set to: $currentProcessingDeptId")
-                        }
-                        is DisplayableItem.ShoppingListItemRow -> {
-                            // ВАЖНО: departmentIdAtPurchase берем из displayable.item (т.е. из internalList адаптера)
-                            // Он не должен меняться здесь, если onItemMove его не поменял (а он не должен, если запрещает).
-                            val originalItem = displayable.item
-                            itemsWithNewSortOrderOnly.add(
-                                originalItem.copy(
-                                    manualSortOrder = orderInCurrentGroup++
-                                    // departmentIdAtPurchase остается displayable.item.departmentIdAtPurchase
-                                )
-                            )
-                            android.util.Log.d("CartyDND", "  Processed Item in Fragment: ${originalItem.productName}, originalDept: ${originalItem.departmentIdAtPurchase}, newSortOrder: ${orderInCurrentGroup -1}, its group during processing: $currentProcessingDeptId")
-                        }
-                    }
-                }
-                android.util.Log.d("CartyDND", "Fragment onOrderChanged - itemsWithNewSortOrderOnly for ViewModel: $itemsWithNewSortOrderOnly")
-                viewModel.updateShoppingListItemsOrder(itemsWithNewSortOrderOnly)
+                viewModel.processAndUpdateOrder(updatedDisplayableItemsFromAdapter)
             }
         )
         binding.viewShoppingListRV.apply {
@@ -125,16 +88,7 @@ class ViewShoppingListFragment : Fragment() {
             adapter = shoppingListItemAdapter
             itemAnimator = null
         }
-        val callback = SimpleItemTouchHelperCallback(
-            shoppingListItemAdapter,
-            getAdapterViewType = { position ->
-                if (position >= 0 && position < shoppingListItemAdapter.itemCount) {
-                    shoppingListItemAdapter.getItemViewType(position)
-                } else {
-                    -1
-                }
-            }
-        )
+        val callback = SimpleItemTouchHelperCallback(shoppingListItemAdapter) // Убрали второй параметр
         itemTouchHelper = ItemTouchHelper(callback)
         itemTouchHelper?.attachToRecyclerView(binding.viewShoppingListRV)
     }
@@ -143,7 +97,9 @@ class ViewShoppingListFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { uiState ->
+                    Log.d("CartyDND", "Fragment observeViewModelAndSetupUI - UI State Update. DisplayableItems count: ${uiState.displayableItems.size}, Grouping: ${uiState.isGroupingEnabled}")
                     if (uiState.isLoading && uiState.displayableItems.isEmpty() && uiState.currentList == null) {
+                        Log.d("CartyDND", "Fragment observeViewModelAndSetupUI - Still loading initial or empty.")
                         return@collect
                     }
 
@@ -172,6 +128,8 @@ class ViewShoppingListFragment : Fragment() {
                     }
 
                     shoppingListItemAdapter.submitList(uiState.displayableItems)
+                    Log.d("CartyDND", "Fragment observeViewModelAndSetupUI - Submitted ${uiState.displayableItems.size} items to adapter.")
+
 
                     if (uiState.productToAdd != null && childFragmentManager.findFragmentByTag("addItemDetailsDialog") == null) {
                         showAddItemDetailsDialog(uiState.productToAdd)

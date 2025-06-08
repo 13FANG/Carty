@@ -71,12 +71,13 @@ class ShoppingListsViewModel(
                     listFromAdapter.copy(manualSortIndex = newIndex)
                 }
             }
+
             if (orderedListsFromAdapter.size != uiState.value.activeLists.size) {
                 orderActuallyChanged = true
-            } else {
-                val idsFromAdapter = orderedListsFromAdapter.map { it.shoppingListId }.toSet()
-                val idsFromState = uiState.value.activeLists.map { it.shoppingListId }.toSet()
-                if (idsFromAdapter != idsFromState) {
+            } else if (!orderActuallyChanged) {
+                val originalIdsOrder = uiState.value.activeLists.map { it.shoppingListId }
+                val processedIdsOrder = orderedListsFromAdapter.map { it.shoppingListId }
+                if(originalIdsOrder != processedIdsOrder && processedIdsOrder.isNotEmpty()) {
                     orderActuallyChanged = true
                 }
             }

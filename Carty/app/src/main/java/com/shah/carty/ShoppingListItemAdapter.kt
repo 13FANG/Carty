@@ -24,9 +24,7 @@ class ShoppingListItemAdapter(
 ) : ListAdapter<DisplayableItem, RecyclerView.ViewHolder>(DisplayableItemDiffCallback()),
     ItemTouchHelperAdapter {
 
-    private var internalList: MutableList<DisplayableItem> = mutableListOf()
-    private var dragInProgress = false
-    private var listSnapshotBeforeDrag: List<DisplayableItem>? = null
+    private val internalList: MutableList<DisplayableItem> = ArrayList()
     var isGroupingEnabled: Boolean = true
 
     companion object {
@@ -34,8 +32,17 @@ class ShoppingListItemAdapter(
         const val VIEW_TYPE_ITEM = 1
     }
 
+    override fun submitList(list: List<DisplayableItem>?) {
+        super.submitList(list) {
+            internalList.clear()
+            if (list != null) {
+                internalList.addAll(list)
+            }
+        }
+    }
+
     override fun getItemCount(): Int {
-        return if (dragInProgress && internalList.isNotEmpty()) internalList.size else super.getItemCount()
+        return currentList.size
     }
 
     override fun isItemDraggable(position: Int): Boolean {
@@ -44,25 +51,7 @@ class ShoppingListItemAdapter(
     }
 
     override fun getItemViewType(position: Int): Int {
-        val listForType = if (dragInProgress && internalList.isNotEmpty()) internalList else currentList
-        if (position < 0 || position >= listForType.size) return -1
-        return listForType[position].viewType
-    }
-
-    override fun submitList(list: List<DisplayableItem>?) {
-        val listToSubmit = list ?: emptyList()
-        super.submitList(listToSubmit)
-        if (!dragInProgress) {
-            internalList = ArrayList(listToSubmit)
-        }
-    }
-
-    override fun submitList(list: List<DisplayableItem>?, commitCallback: Runnable?) {
-        val listToSubmit = list ?: emptyList()
-        super.submitList(listToSubmit, commitCallback)
-        if (!dragInProgress) {
-            internalList = ArrayList(listToSubmit)
-        }
+        return getItem(position).viewType
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -80,19 +69,16 @@ class ShoppingListItemAdapter(
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        val listForBind = if (dragInProgress && internalList.isNotEmpty()) internalList else currentList
-        if (position < 0 || position >= listForBind.size) return
-
-        val displayableItem = listForBind[position]
+        val displayableItem = getItem(position)
 
         when (holder) {
             is DepartmentHeaderViewHolder -> {
-                val headerItem = displayableItem as? DisplayableItem.DepartmentHeader ?: return
+                val headerItem = displayableItem as DisplayableItem.DepartmentHeader
                 holder.bind(headerItem)
                 holder.itemView.setOnClickListener { onHeaderClicked(headerItem) }
             }
             is ItemViewHolder -> {
-                val shoppingListItemRow = displayableItem as? DisplayableItem.ShoppingListItemRow ?: return
+                val shoppingListItemRow = displayableItem as DisplayableItem.ShoppingListItemRow
                 holder.bind(shoppingListItemRow.item, this)
                 holder.itemView.setOnClickListener {
                     onItemClicked(shoppingListItemRow.item)
@@ -102,61 +88,27 @@ class ShoppingListItemAdapter(
     }
 
     override fun onItemMove(fromPosition: Int, toPosition: Int): Boolean {
-        if (!dragInProgress) {
-            listSnapshotBeforeDrag = ArrayList(currentList)
-            internalList.clear()
-            internalList.addAll(listSnapshotBeforeDrag!!)
-            dragInProgress = true
-        }
+        val fromItem = internalList[fromPosition]
+        val toItem = internalList[toPosition]
 
-        if (fromPosition < 0 || fromPosition >= internalList.size ||
-            toPosition < 0 || toPosition >= internalList.size) {
-            return false
-        }
-
-        if (fromPosition == toPosition) return true
-
-        val movingItem = internalList[fromPosition]
-        val itemCurrentlyAtToPosition = internalList[toPosition]
-
-        if (movingItem !is DisplayableItem.ShoppingListItemRow) {
-            return false
-        }
-        if (itemCurrentlyAtToPosition is DisplayableItem.DepartmentHeader && isGroupingEnabled) {
-            return false
-        }
-
-        if (itemCurrentlyAtToPosition is DisplayableItem.ShoppingListItemRow && isGroupingEnabled) {
-            val movingItemActualDepartmentId = movingItem.item.departmentIdAtPurchase
-            val targetItemActualDepartmentId = itemCurrentlyAtToPosition.item.departmentIdAtPurchase
-
-            val normMoving = movingItemActualDepartmentId ?: ViewShoppingListViewModel.DEPARTMENT_ID_NO_DEPARTMENT
-            val normTarget = targetItemActualDepartmentId ?: ViewShoppingListViewModel.DEPARTMENT_ID_NO_DEPARTMENT
-
-            if (normMoving != normTarget) {
+        // Защита от перетаскивания на заголовок или в другую группу
+        if (isGroupingEnabled) {
+            if (fromItem is DisplayableItem.ShoppingListItemRow && toItem is DisplayableItem.ShoppingListItemRow) {
+                if (fromItem.item.departmentIdAtPurchase != toItem.item.departmentIdAtPurchase) {
+                    return false
+                }
+            } else {
                 return false
             }
         }
 
-        if (fromPosition < toPosition) {
-            for (i in fromPosition until toPosition) {
-                Collections.swap(internalList, i, i + 1)
-            }
-        } else {
-            for (i in fromPosition downTo toPosition + 1) {
-                Collections.swap(internalList, i, i - 1)
-            }
-        }
+        Collections.swap(internalList, fromPosition, toPosition)
         notifyItemMoved(fromPosition, toPosition)
         return true
     }
 
     override fun onDragFinished() {
-        if (dragInProgress) {
-            onOrderChanged(ArrayList(internalList))
-        }
-        dragInProgress = false
-        listSnapshotBeforeDrag = null
+        onOrderChanged(ArrayList(internalList))
     }
 
     override fun onItemDismiss(position: Int) {}

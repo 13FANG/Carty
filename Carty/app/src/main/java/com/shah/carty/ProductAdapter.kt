@@ -17,32 +17,14 @@ class ProductAdapter(
 ) : ListAdapter<Product, ProductAdapter.ProductViewHolder>(ProductDiffCallback()),
     ItemTouchHelperAdapter {
 
-    private var internalList: MutableList<Product> = mutableListOf()
-    private var dragInProgress = false
-    private var listSnapshotBeforeDrag: List<Product>? = null
-
-
-    override fun getItemCount(): Int {
-        return if (dragInProgress && internalList.isNotEmpty()) internalList.size else super.getItemCount()
-    }
-
-    override fun isItemDraggable(position: Int): Boolean {
-        return position < itemCount
-    }
+    private val internalList: MutableList<Product> = ArrayList()
 
     override fun submitList(list: List<Product>?) {
-        val listToSubmit = list ?: emptyList()
-        super.submitList(listToSubmit)
-        if (!dragInProgress) {
-            internalList = ArrayList(listToSubmit)
-        }
-    }
-
-    override fun submitList(list: List<Product>?, commitCallback: Runnable?) {
-        val listToSubmit = list ?: emptyList()
-        super.submitList(listToSubmit, commitCallback)
-        if (!dragInProgress) {
-            internalList = ArrayList(listToSubmit)
+        super.submitList(list) {
+            internalList.clear()
+            if (list != null) {
+                internalList.addAll(list)
+            }
         }
     }
 
@@ -52,30 +34,22 @@ class ProductAdapter(
     }
 
     override fun onBindViewHolder(holder: ProductViewHolder, position: Int) {
-        val listForBind = if (dragInProgress && internalList.isNotEmpty()) internalList else currentList
-        if (position < 0 || position >= listForBind.size) return
-        val product = listForBind[position]
-
-
+        val product = getItem(position)
         holder.bind(product, getDepartmentName, onDeleteClicked)
         holder.itemView.setOnClickListener {
             onItemClicked(product)
         }
     }
 
-    override fun onItemMove(fromPosition: Int, toPosition: Int): Boolean {
-        if (!dragInProgress) {
-            listSnapshotBeforeDrag = ArrayList(currentList)
-            internalList.clear()
-            internalList.addAll(listSnapshotBeforeDrag!!)
-            dragInProgress = true
-        }
-        if (fromPosition < 0 || fromPosition >= internalList.size ||
-            toPosition < 0 || toPosition >= internalList.size) {
-            return false
-        }
-        if (fromPosition == toPosition) return true
+    override fun getItemCount(): Int {
+        return currentList.size
+    }
 
+    override fun isItemDraggable(position: Int): Boolean {
+        return position < currentList.size
+    }
+
+    override fun onItemMove(fromPosition: Int, toPosition: Int): Boolean {
         if (fromPosition < toPosition) {
             for (i in fromPosition until toPosition) {
                 Collections.swap(internalList, i, i + 1)
@@ -90,11 +64,7 @@ class ProductAdapter(
     }
 
     override fun onDragFinished() {
-        if (dragInProgress) {
-            onOrderChanged(ArrayList(internalList))
-        }
-        dragInProgress = false
-        listSnapshotBeforeDrag = null
+        onOrderChanged(ArrayList(internalList))
     }
 
     override fun onItemDismiss(position: Int) {}

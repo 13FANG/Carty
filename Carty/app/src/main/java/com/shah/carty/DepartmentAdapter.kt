@@ -16,32 +16,14 @@ class DepartmentAdapter(
 ) : ListAdapter<Department, DepartmentAdapter.DepartmentViewHolder>(DepartmentDiffCallback()),
     ItemTouchHelperAdapter {
 
-    private var internalList: MutableList<Department> = mutableListOf()
-    private var dragInProgress = false
-    private var listSnapshotBeforeDrag: List<Department>? = null
-
-
-    override fun getItemCount(): Int {
-        return if (dragInProgress && internalList.isNotEmpty()) internalList.size else super.getItemCount()
-    }
-
-    override fun isItemDraggable(position: Int): Boolean {
-        return position < itemCount
-    }
+    private val internalList: MutableList<Department> = ArrayList()
 
     override fun submitList(list: List<Department>?) {
-        val listToSubmit = list ?: emptyList()
-        super.submitList(listToSubmit)
-        if (!dragInProgress) {
-            internalList = ArrayList(listToSubmit)
-        }
-    }
-
-    override fun submitList(list: List<Department>?, commitCallback: Runnable?) {
-        val listToSubmit = list ?: emptyList()
-        super.submitList(listToSubmit, commitCallback)
-        if (!dragInProgress) {
-            internalList = ArrayList(listToSubmit)
+        super.submitList(list) {
+            internalList.clear()
+            if (list != null) {
+                internalList.addAll(list)
+            }
         }
     }
 
@@ -51,29 +33,22 @@ class DepartmentAdapter(
     }
 
     override fun onBindViewHolder(holder: DepartmentViewHolder, position: Int) {
-        val listForBind = if (dragInProgress && internalList.isNotEmpty()) internalList else currentList
-        if (position < 0 || position >= listForBind.size) return
-        val department = listForBind[position]
-
+        val department = getItem(position)
         holder.bind(department, onDeleteClicked)
         holder.itemView.setOnClickListener {
             onItemClicked(department)
         }
     }
 
-    override fun onItemMove(fromPosition: Int, toPosition: Int): Boolean {
-        if (!dragInProgress) {
-            listSnapshotBeforeDrag = ArrayList(currentList)
-            internalList.clear()
-            internalList.addAll(listSnapshotBeforeDrag!!)
-            dragInProgress = true
-        }
-        if (fromPosition < 0 || fromPosition >= internalList.size ||
-            toPosition < 0 || toPosition >= internalList.size) {
-            return false
-        }
-        if (fromPosition == toPosition) return true
+    override fun getItemCount(): Int {
+        return currentList.size
+    }
 
+    override fun isItemDraggable(position: Int): Boolean {
+        return position < currentList.size
+    }
+
+    override fun onItemMove(fromPosition: Int, toPosition: Int): Boolean {
         if (fromPosition < toPosition) {
             for (i in fromPosition until toPosition) {
                 Collections.swap(internalList, i, i + 1)
@@ -88,11 +63,7 @@ class DepartmentAdapter(
     }
 
     override fun onDragFinished() {
-        if (dragInProgress) {
-            onOrderChanged(ArrayList(internalList))
-        }
-        dragInProgress = false
-        listSnapshotBeforeDrag = null
+        onOrderChanged(ArrayList(internalList))
     }
 
     override fun onItemDismiss(position: Int) {}

@@ -10,6 +10,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.ArrayList
+import java.util.Collections
 
 class ShoppingListAdapter(
     private val onItemClicked: (ShoppingList) -> Unit,
@@ -17,31 +18,14 @@ class ShoppingListAdapter(
 ) : ListAdapter<ShoppingList, ShoppingListAdapter.ShoppingListViewHolder>(ShoppingListDiffCallback()),
     ItemTouchHelperAdapter {
 
-    private var internalList: MutableList<ShoppingList> = mutableListOf()
-    private var dragInProgress = false
-    private var listSnapshotBeforeDrag: List<ShoppingList>? = null
-
-    override fun getItemCount(): Int {
-        return if (dragInProgress && internalList.isNotEmpty()) internalList.size else super.getItemCount()
-    }
-
-    override fun isItemDraggable(position: Int): Boolean {
-        return position < itemCount
-    }
+    private val internalList: MutableList<ShoppingList> = ArrayList()
 
     override fun submitList(list: List<ShoppingList>?) {
-        val listToSubmit = list ?: emptyList()
-        super.submitList(listToSubmit)
-        if (!dragInProgress) {
-            internalList = ArrayList(listToSubmit)
-        }
-    }
-
-    override fun submitList(list: List<ShoppingList>?, commitCallback: Runnable?) {
-        val listToSubmit = list ?: emptyList()
-        super.submitList(listToSubmit, commitCallback)
-        if (!dragInProgress) {
-            internalList = ArrayList(listToSubmit)
+        super.submitList(list) {
+            internalList.clear()
+            if (list != null) {
+                internalList.addAll(list)
+            }
         }
     }
 
@@ -51,42 +35,37 @@ class ShoppingListAdapter(
     }
 
     override fun onBindViewHolder(holder: ShoppingListViewHolder, position: Int) {
-        val listForBind = if (dragInProgress && internalList.isNotEmpty()) internalList else currentList
-        if (position < 0 || position >= listForBind.size) return
-        val shoppingList = listForBind[position]
-
+        val shoppingList = getItem(position)
         holder.bind(shoppingList)
         holder.itemView.setOnClickListener {
             onItemClicked(shoppingList)
         }
     }
 
+    override fun getItemCount(): Int {
+        return currentList.size
+    }
+
+    override fun isItemDraggable(position: Int): Boolean {
+        return position < currentList.size
+    }
+
     override fun onItemMove(fromPosition: Int, toPosition: Int): Boolean {
-        if (!dragInProgress) {
-            listSnapshotBeforeDrag = ArrayList(currentList)
-            internalList.clear()
-            internalList.addAll(listSnapshotBeforeDrag!!)
-            dragInProgress = true
+        if (fromPosition < toPosition) {
+            for (i in fromPosition until toPosition) {
+                Collections.swap(internalList, i, i + 1)
+            }
+        } else {
+            for (i in fromPosition downTo toPosition + 1) {
+                Collections.swap(internalList, i, i - 1)
+            }
         }
-
-        if (fromPosition < 0 || fromPosition >= internalList.size ||
-            toPosition < 0 || toPosition >= internalList.size) {
-            return false
-        }
-        if (fromPosition == toPosition) return true
-
-        val item = internalList.removeAt(fromPosition)
-        internalList.add(toPosition, item)
         notifyItemMoved(fromPosition, toPosition)
         return true
     }
 
     override fun onDragFinished() {
-        if (dragInProgress) {
-            onOrderChanged(ArrayList(internalList))
-        }
-        dragInProgress = false
-        listSnapshotBeforeDrag = null
+        onOrderChanged(ArrayList(internalList))
     }
 
     override fun onItemDismiss(position: Int) {}

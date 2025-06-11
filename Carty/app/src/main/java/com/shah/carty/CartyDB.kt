@@ -27,11 +27,11 @@ abstract class CartyDatabase : RoomDatabase(){
         @Volatile
         private var INSTANCE : CartyDatabase? = null
 
-        // Миграция с версии 1 на 2
         val MIGRATION_1_2: Migration = object : Migration(1, 2) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 database.execSQL("ALTER TABLE Department ADD COLUMN manualSortIndex INTEGER NOT NULL DEFAULT 0")
                 database.execSQL("ALTER TABLE Product ADD COLUMN manualSortIndex INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE ShoppingList ADD COLUMN manualSortIndex INTEGER NOT NULL DEFAULT 0")
             }
         }
 

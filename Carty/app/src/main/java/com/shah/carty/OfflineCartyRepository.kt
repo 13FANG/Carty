@@ -4,7 +4,7 @@ import android.util.Log
 import androidx.room.withTransaction
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.ktx.toObjects
+import com.google.firebase.firestore.ktx.toObject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.tasks.await
@@ -18,692 +18,238 @@ class OfflineCartyRepository(
     private val database: CartyDatabase
 ) : CartyRepository {
 
+    private val TAG = "OfflineCartyRepo"
     private val firestore = FirebaseFirestore.getInstance()
 
-    private fun getCurrentUserId(): String {
-        return firebaseAuth.currentUser?.uid ?: CartyApplication.GUEST_USER_ID
-    }
+    private fun getCurrentUserId(): String = firebaseAuth.currentUser?.uid ?: CartyApplication.GUEST_USER_ID
+    override fun isUserLoggedIn(): Boolean = firebaseAuth.currentUser != null
+    private fun isUserGuest(): Boolean = firebaseAuth.currentUser == null
 
-    override fun isUserLoggedIn(): Boolean {
-        return firebaseAuth.currentUser != null
-    }
-
-    private fun isUserGuest(): Boolean {
-        return firebaseAuth.currentUser == null
-    }
-
-    private suspend fun safeFirestoreDelete(firestoreId: String, collectionPath: String) {
-        if (!isUserGuest() && firestoreId.isNotBlank()) {
-            try {
-                firestore.collection(collectionPath).document(firestoreId).delete().await()
-            } catch (e: Exception) {
-            }
+    private suspend fun <T> safeFirestoreSet(collectionPath: String, docId: String, data: T) {
+        if (isUserGuest() || docId.isBlank()) return
+        try {
+            firestore.collection(collectionPath).document(docId).set(data as Any).await()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error setting document $docId in $collectionPath", e)
         }
     }
 
-    private suspend fun <T: Any> batchUpdateFirestore(
-        items: List<T>,
-        collectionPath: String,
-        idExtractor: (T) -> Long,
-        firestoreIdExtractor: (T) -> String,
-        ownerIdExtractor: (T) -> String,
-        copyFunction: (T, String?, String?) -> T,
-        updateLocalWithFirestoreId: suspend (List<T>) -> Unit,
-        userId: String
-    ) {
-        if (isUserGuest()) return
-
-        val batch = firestore.batch()
-        val itemsToUpdateInRoomWithNewFsId = mutableListOf<T>()
-
-        items.forEach { item ->
-            var itemForFirestore = item
-            if (ownerIdExtractor(item) == CartyApplication.GUEST_USER_ID) {
-                itemForFirestore = copyFunction(item, null, userId)
-            }
-
-            if (ownerIdExtractor(itemForFirestore) == userId) {
-                val currentFirestoreId = firestoreIdExtractor(itemForFirestore)
-                if (currentFirestoreId.isNotBlank()) {
-                    val docRef = firestore.collection(collectionPath).document(currentFirestoreId)
-                    batch.set(docRef, itemForFirestore as Any)
-                } else {
-                    val newDocRef = firestore.collection(collectionPath).document()
-                    val newItemWithFsId = copyFunction(itemForFirestore, newDocRef.id, null)
-                    batch.set(newDocRef, newItemWithFsId as Any)
-                    itemsToUpdateInRoomWithNewFsId.add(newItemWithFsId)
-                }
-            }
-        }
-
-        if (itemsToUpdateInRoomWithNewFsId.isNotEmpty() || items.any { firestoreIdExtractor(it).isNotBlank() && ownerIdExtractor(it) == userId }) {
-            try {
-                batch.commit().await()
-                if (itemsToUpdateInRoomWithNewFsId.isNotEmpty()) {
-                    updateLocalWithFirestoreId(itemsToUpdateInRoomWithNewFsId)
-                }
-            } catch (e: Exception) {
-            }
+    private suspend fun safeFirestoreDelete(collectionPath: String, docId: String) {
+        if (isUserGuest() || docId.isBlank()) return
+        try {
+            firestore.collection(collectionPath).document(docId).delete().await()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error deleting document $docId from $collectionPath", e)
         }
     }
 
-
+    // --- Department ---
     override suspend fun addDepartment(department: Department) {
         val userId = getCurrentUserId()
-        val currentDepartments = departmentDao.getAllDepartmentsList(userId).first()
-        val nextSortIndex = (currentDepartments.maxOfOrNull { it.manualSortIndex } ?: -1) + 1
-        val departmentToInsert = department.copy(
-            ownerId = userId,
-            departmentId = 0L,
-            manualSortIndex = nextSortIndex,
-            firestoreId = ""
-        )
-        val generatedLocalId = departmentDao.addDepartment(departmentToInsert)
-        val departmentAfterRoomInsert = departmentToInsert.copy(departmentId = generatedLocalId)
-
-        safeFirestoreCall(
-            currentFirestoreId = departmentAfterRoomInsert.firestoreId,
-            collectionPath = "departments",
-            dataObject = departmentAfterRoomInsert,
-            forceCreateNew = true,
-            updateLocalWithFirestoreId = { newFsId, savedDept ->
-                departmentDao.updateDepartment(savedDept.copy(firestoreId = newFsId))
-            }
-        )
+        val newId = System.currentTimeMillis()
+        val newDepartment = department.copy(departmentId = newId, ownerId = userId, firestoreId = newId.toString())
+        departmentDao.addDepartment(newDepartment)
+        safeFirestoreSet("departments", newDepartment.firestoreId, newDepartment)
     }
 
     override suspend fun updateDepartment(department: Department) {
-        val userId = getCurrentUserId()
-        if (department.ownerId != userId && !(isUserGuest() && department.ownerId == CartyApplication.GUEST_USER_ID)) return
-        val finalDepartment = if (isUserGuest() && department.ownerId != CartyApplication.GUEST_USER_ID) {
-            department.copy(ownerId = CartyApplication.GUEST_USER_ID)
-        } else if (!isUserGuest() && department.ownerId == CartyApplication.GUEST_USER_ID) {
-            department.copy(ownerId = userId)
-        }
-        else {
-            department
-        }
-        departmentDao.updateDepartment(finalDepartment)
-        safeFirestoreCall(
-            currentFirestoreId = finalDepartment.firestoreId,
-            collectionPath = "departments",
-            dataObject = finalDepartment,
-            forceCreateNew = finalDepartment.firestoreId.isBlank() && !isUserGuest(),
-            updateLocalWithFirestoreId = {newFsId, savedObject ->
-                if (!isUserGuest()) departmentDao.updateDepartment(savedObject.copy(firestoreId = newFsId))
-            }
-        )
+        departmentDao.updateDepartment(department)
+        safeFirestoreSet("departments", department.firestoreId, department)
     }
 
     override suspend fun updateDepartments(departments: List<Department>) {
-        val userId = getCurrentUserId()
-        database.withTransaction {
-            departmentDao.updateDepartments(departments.map {
-                if (isUserGuest() && it.ownerId != CartyApplication.GUEST_USER_ID) {
-                    it.copy(ownerId = CartyApplication.GUEST_USER_ID)
-                } else if (!isUserGuest() && it.ownerId == CartyApplication.GUEST_USER_ID) {
-                    it.copy(ownerId = userId)
-                } else {
-                    it
-                }
-            })
-        }
-        batchUpdateFirestore(
-            items = departments,
-            collectionPath = "departments",
-            idExtractor = { it.departmentId },
-            firestoreIdExtractor = { it.firestoreId },
-            ownerIdExtractor = { it.ownerId },
-            copyFunction = { item, fsId, ownerId ->
-                item.copy(
-                    firestoreId = fsId ?: item.firestoreId,
-                    ownerId = ownerId ?: item.ownerId
-                )
-            },
-            updateLocalWithFirestoreId = { updatedItemsWithFsId ->
-                database.withTransaction { departmentDao.updateDepartments(updatedItemsWithFsId) }
-            },
-            userId = userId
-        )
+        departmentDao.updateDepartments(departments)
+        batchSet("departments", departments) { it.firestoreId }
     }
 
+    override fun getAllDepartmentsList(): Flow<List<Department>> = departmentDao.getAllDepartmentsList(getCurrentUserId())
+    override fun getDepartmentById(departmentIdForSearch: Long): Flow<Department?> = departmentDao.getDepartmentById(departmentIdForSearch, getCurrentUserId())
 
     override suspend fun deleteDepartment(department: Department) {
-        val userId = getCurrentUserId()
-        if (department.ownerId != userId) return
-
-        val productsToUpdateLocally = productDao.getProductsByDepartmentId(department.departmentId, userId).first()
-        productsToUpdateLocally.forEach { product ->
-            val updatedProduct = product.copy(departmentId = null)
-            productDao.updateProduct(updatedProduct)
-            if (!isUserGuest() && updatedProduct.firestoreId.isNotBlank()) {
-                try {
-                    firestore.collection("products").document(updatedProduct.firestoreId)
-                        .update("departmentId", null).await()
-                } catch (e: Exception) {
-                }
-            }
+        database.withTransaction {
+            productDao.resetDepartmentIdForOwner(department.departmentId, department.ownerId)
+            departmentDao.deleteDepartment(department)
         }
+        if (isUserGuest()) return
 
-        val departmentFirestoreId = department.firestoreId
-        departmentDao.deleteDepartment(department)
-        safeFirestoreDelete(departmentFirestoreId, "departments")
+        val productsToUpdate = firestore.collection("products").whereEqualTo("departmentId", department.departmentId).whereEqualTo("ownerId", department.ownerId).get().await()
+        val batch = firestore.batch()
+        productsToUpdate.documents.forEach { doc -> batch.update(doc.reference, "departmentId", null) }
+        batch.delete(firestore.collection("departments").document(department.firestoreId))
+        try { batch.commit().await() } catch(e: Exception) { Log.e(TAG, "Error deleting department", e) }
     }
 
-    override fun getAllDepartmentsList(): Flow<List<Department>> {
-        return departmentDao.getAllDepartmentsList(getCurrentUserId())
-    }
-
-    override fun getDepartmentById(departmentIdForSearch: Long): Flow<Department?> {
-        return departmentDao.getDepartmentById(departmentIdForSearch, getCurrentUserId())
-    }
-
+    // --- Product ---
     override suspend fun addProduct(product: Product) {
-        try {
-            val userId = getCurrentUserId()
-            val currentProducts = productDao.getAllProductsList(userId).first()
-            val nextSortIndex = (currentProducts.maxOfOrNull { it.manualSortIndex } ?: -1) + 1
-            val productToInsertInRoom = product.copy(
-                ownerId = userId,
-                productId = 0L,
-                manualSortIndex = nextSortIndex,
-                firestoreId = ""
-            )
-            val generatedLocalId = productDao.addProduct(productToInsertInRoom)
-
-            if (generatedLocalId > 0) {
-                val productForFirestore = productToInsertInRoom.copy(
-                    productId = generatedLocalId
-                )
-
-                safeFirestoreCall(
-                    currentFirestoreId = productForFirestore.firestoreId,
-                    collectionPath = "products",
-                    dataObject = productForFirestore,
-                    forceCreateNew = true,
-                    updateLocalWithFirestoreId = { newFsId, savedProd ->
-                        productDao.updateProduct(savedProd.copy(firestoreId = newFsId))
-                    }
-                )
-            } else {
-            }
-        } catch (e: Exception) {
-        }
+        val userId = getCurrentUserId()
+        val newId = System.currentTimeMillis()
+        val newProduct = product.copy(productId = newId, ownerId = userId, firestoreId = newId.toString())
+        productDao.addProduct(newProduct)
+        safeFirestoreSet("products", newProduct.firestoreId, newProduct)
     }
 
     override suspend fun updateProduct(product: Product) {
-        val userId = getCurrentUserId()
-        if (product.ownerId != userId && !(isUserGuest() && product.ownerId == CartyApplication.GUEST_USER_ID)) return
-        val finalProduct = if (isUserGuest() && product.ownerId != CartyApplication.GUEST_USER_ID) {
-            product.copy(ownerId = CartyApplication.GUEST_USER_ID)
-        } else if (!isUserGuest() && product.ownerId == CartyApplication.GUEST_USER_ID) {
-            product.copy(ownerId = userId)
-        }
-        else {
-            product
-        }
-        productDao.updateProduct(finalProduct)
-        safeFirestoreCall(
-            currentFirestoreId = finalProduct.firestoreId,
-            collectionPath = "products",
-            dataObject = finalProduct,
-            forceCreateNew = finalProduct.firestoreId.isBlank() && !isUserGuest(),
-            updateLocalWithFirestoreId = { newFsId, savedObject ->
-                if(!isUserGuest()) productDao.updateProduct(savedObject.copy(firestoreId = newFsId))
-            }
-        )
+        productDao.updateProduct(product)
+        safeFirestoreSet("products", product.firestoreId, product)
     }
 
     override suspend fun updateProducts(products: List<Product>) {
-        val userId = getCurrentUserId()
-        database.withTransaction {
-            productDao.updateProducts(products.map {
-                if (isUserGuest() && it.ownerId != CartyApplication.GUEST_USER_ID) {
-                    it.copy(ownerId = CartyApplication.GUEST_USER_ID)
-                } else if (!isUserGuest() && it.ownerId == CartyApplication.GUEST_USER_ID) {
-                    it.copy(ownerId = userId)
-                } else {
-                    it
-                }
-            })
-        }
-        batchUpdateFirestore(
-            items = products,
-            collectionPath = "products",
-            idExtractor = { it.productId },
-            firestoreIdExtractor = { it.firestoreId },
-            ownerIdExtractor = { it.ownerId },
-            copyFunction = { item, fsId, ownerId ->
-                item.copy(
-                    firestoreId = fsId ?: item.firestoreId,
-                    ownerId = ownerId ?: item.ownerId
-                )
-            },
-            updateLocalWithFirestoreId = { updatedItemsWithFsId ->
-                database.withTransaction { productDao.updateProducts(updatedItemsWithFsId) }
-            },
-            userId = userId
-        )
+        productDao.updateProducts(products)
+        batchSet("products", products) { it.firestoreId }
     }
+
+    override fun getAllProductsList(): Flow<List<Product>> = productDao.getAllProductsList(getCurrentUserId())
+    override fun getProductById(productIdForSearch: Long): Flow<Product?> = productDao.getProductById(productIdForSearch, getCurrentUserId())
+    override fun getProductByName(productNameForSearch: String): Flow<List<Product>> = productDao.getProductsByName(productNameForSearch, getCurrentUserId())
+    override suspend fun resetDepartmentId(departmentIdToDelete: Long) {} // Logic is now inside deleteDepartment
 
     override suspend fun deleteProduct(product: Product) {
-        val userId = getCurrentUserId()
-        if (product.ownerId != userId) return
-
-        val itemsToUpdate = shoppingListItemDao.getAllItemsByProductIdAndOwnerId(product.productId, userId).first()
-        itemsToUpdate.forEach { item ->
-            val parentList = shoppingListDao.getShoppingListById(item.shoppingListId, userId).first()
-            if (parentList != null && !parentList.isCompleted) {
-                val itemToDeleteFirestoreId = item.firestoreId
-                shoppingListItemDao.deleteShoppingListItem(item)
-                safeFirestoreDelete(itemToDeleteFirestoreId, "shoppingListItems")
-            }
+        database.withTransaction {
+            shoppingListItemDao.deleteItemsByProductIdAndOwnerId(product.productId, product.ownerId)
+            productDao.deleteProduct(product)
         }
+        if (isUserGuest()) return
 
-        val productFirestoreId = product.firestoreId
-        productDao.deleteProduct(product)
-        safeFirestoreDelete(productFirestoreId, "products")
+        val itemsToDelete = firestore.collection("shoppingListItems").whereEqualTo("productId", product.productId).whereEqualTo("ownerId", product.ownerId).get().await()
+        val batch = firestore.batch()
+        itemsToDelete.documents.forEach { doc -> batch.delete(doc.reference) }
+        batch.delete(firestore.collection("products").document(product.firestoreId))
+        try { batch.commit().await() } catch(e: Exception) { Log.e(TAG, "Error deleting product", e) }
     }
 
-    override fun getAllProductsList(): Flow<List<Product>> {
-        return productDao.getAllProductsList(getCurrentUserId())
-    }
-
-    override fun getProductById(productIdForSearch: Long): Flow<Product?> {
-        return productDao.getProductById(productIdForSearch, getCurrentUserId())
-    }
-
-    override fun getProductByName(productNameForSearch: String): Flow<List<Product>> {
-        return productDao.getProductsByName(productNameForSearch, getCurrentUserId())
-    }
-
-    override suspend fun resetDepartmentId(departmentIdToDelete: Long) {
-        val userId = getCurrentUserId()
-        val productsToUpdateLocally = productDao.getProductsByDepartmentId(departmentIdToDelete, userId).first()
-        productsToUpdateLocally.forEach {
-            productDao.updateProduct(it.copy(departmentId = null))
-        }
-
-        if (!isUserGuest()) {
-            val productsToUpdateFS = firestore.collection("products")
-                .whereEqualTo("ownerId", userId)
-                .whereEqualTo("departmentId", departmentIdToDelete)
-                .get().await()
-            val batch = firestore.batch()
-            productsToUpdateFS.documents.forEach { doc ->
-                batch.update(doc.reference, "departmentId", null)
-            }
-            try {
-                batch.commit().await()
-            } catch (e: Exception) {}
-        }
-    }
-
+    // --- ShoppingList ---
     override suspend fun addShoppingList(shoppingList: ShoppingList): Long {
         val userId = getCurrentUserId()
-        val currentLists = shoppingListDao.getActiveAndFavoriteLists(userId).first()
-        val nextSortIndex = (currentLists.filter { !it.isFavorite }.minOfOrNull { it.manualSortIndex } ?: 0) -1
-
-        val listToInsert = shoppingList.copy(
-            ownerId = userId,
-            shoppingListId = 0L,
-            manualSortIndex = nextSortIndex,
-            firestoreId = ""
-        )
-        val generatedLocalId = shoppingListDao.addShoppingList(listToInsert)
-        val listAfterRoomInsert = listToInsert.copy(shoppingListId = generatedLocalId)
-
-        safeFirestoreCall(
-            currentFirestoreId = listAfterRoomInsert.firestoreId,
-            collectionPath = "shoppingLists",
-            dataObject = listAfterRoomInsert,
-            forceCreateNew = true,
-            updateLocalWithFirestoreId = { newFsId, savedList ->
-                shoppingListDao.updateShoppingList(savedList.copy(firestoreId = newFsId))
-            }
-        )
-        return generatedLocalId
+        val newId = System.currentTimeMillis()
+        val newList = shoppingList.copy(shoppingListId = newId, ownerId = userId, firestoreId = newId.toString())
+        shoppingListDao.addShoppingList(newList)
+        safeFirestoreSet("shoppingLists", newList.firestoreId, newList)
+        return newId
     }
 
     override suspend fun updateShoppingList(shoppingList: ShoppingList) {
-        val userId = getCurrentUserId()
-        if (shoppingList.ownerId != userId && !(isUserGuest() && shoppingList.ownerId == CartyApplication.GUEST_USER_ID)) return
-        val finalList = if (isUserGuest() && shoppingList.ownerId != CartyApplication.GUEST_USER_ID) {
-            shoppingList.copy(ownerId = CartyApplication.GUEST_USER_ID)
-        } else if (!isUserGuest() && shoppingList.ownerId == CartyApplication.GUEST_USER_ID) {
-            shoppingList.copy(ownerId = userId)
-        }
-        else {
-            shoppingList
-        }
-        shoppingListDao.updateShoppingList(finalList)
-        safeFirestoreCall(
-            currentFirestoreId = finalList.firestoreId,
-            collectionPath = "shoppingLists",
-            dataObject = finalList,
-            forceCreateNew = finalList.firestoreId.isBlank() && !isUserGuest(),
-            updateLocalWithFirestoreId = {newFsId, savedObject ->
-                if (!isUserGuest()) shoppingListDao.updateShoppingList(savedObject.copy(firestoreId = newFsId))
-            }
-        )
+        shoppingListDao.updateShoppingList(shoppingList)
+        safeFirestoreSet("shoppingLists", shoppingList.firestoreId, shoppingList)
     }
 
     override suspend fun updateShoppingLists(shoppingLists: List<ShoppingList>) {
-        val userId = getCurrentUserId()
-
-        database.withTransaction {
-            shoppingListDao.updateShoppingLists(shoppingLists.map {
-                if (isUserGuest() && it.ownerId != CartyApplication.GUEST_USER_ID) {
-                    it.copy(ownerId = CartyApplication.GUEST_USER_ID)
-                } else if (!isUserGuest() && it.ownerId == CartyApplication.GUEST_USER_ID) {
-                    it.copy(ownerId = userId)
-                } else {
-                    it
-                }
-            })
-        }
-        batchUpdateFirestore(
-            items = shoppingLists,
-            collectionPath = "shoppingLists",
-            idExtractor = { it.shoppingListId },
-            firestoreIdExtractor = { it.firestoreId },
-            ownerIdExtractor = { it.ownerId },
-            copyFunction = { item, fsId, ownerId ->
-                item.copy(
-                    firestoreId = fsId ?: item.firestoreId,
-                    ownerId = ownerId ?: item.ownerId
-                )
-            },
-            updateLocalWithFirestoreId = { updatedItemsWithFsId ->
-                database.withTransaction { shoppingListDao.updateShoppingLists(updatedItemsWithFsId) }
-            },
-            userId = userId
-        )
+        shoppingListDao.updateShoppingLists(shoppingLists)
+        batchSet("shoppingLists", shoppingLists) { it.firestoreId }
     }
 
+    override fun getActiveAndFavoriteLists(): Flow<List<ShoppingList>> = shoppingListDao.getActiveAndFavoriteLists(getCurrentUserId())
+    override fun getShoppingListById(shoppingListIdForSearch: Long): Flow<ShoppingList?> = shoppingListDao.getShoppingListById(shoppingListIdForSearch, getCurrentUserId())
 
     override suspend fun deleteShoppingList(shoppingList: ShoppingList) {
-        val userId = getCurrentUserId()
-        if (shoppingList.ownerId != userId) return
+        database.withTransaction {
+            shoppingListItemDao.deleteShoppingListItemsByListIdAndOwnerId(shoppingList.shoppingListId, shoppingList.ownerId)
+            shoppingListDao.deleteShoppingList(shoppingList)
+        }
+        if (isUserGuest()) return
 
-        val itemsInList = shoppingListItemDao.getItemsForList(shoppingList.shoppingListId, userId).first()
+        val itemsToDelete = firestore.collection("shoppingListItems").whereEqualTo("shoppingListId", shoppingList.shoppingListId).whereEqualTo("ownerId", shoppingList.ownerId).get().await()
         val batch = firestore.batch()
-        var itemsDeletedFromFirestore = false
-
-        itemsInList.forEach { item ->
-            shoppingListItemDao.deleteShoppingListItem(item)
-            if (!isUserGuest() && item.firestoreId.isNotBlank()) {
-                val itemDocRef = firestore.collection("shoppingListItems").document(item.firestoreId)
-                batch.delete(itemDocRef)
-                itemsDeletedFromFirestore = true
-            }
-        }
-        if(itemsDeletedFromFirestore && !isUserGuest()){
-            try {
-                batch.commit().await()
-            } catch (e: Exception) {}
-        }
-
-
-        val listFirestoreId = shoppingList.firestoreId
-        shoppingListDao.deleteShoppingList(shoppingList)
-        safeFirestoreDelete(listFirestoreId, "shoppingLists")
+        itemsToDelete.documents.forEach { doc -> batch.delete(doc.reference) }
+        batch.delete(firestore.collection("shoppingLists").document(shoppingList.firestoreId))
+        try { batch.commit().await() } catch(e: Exception) { Log.e(TAG, "Error deleting shopping list", e) }
     }
 
-    override fun getActiveAndFavoriteLists(): Flow<List<ShoppingList>> {
-        return shoppingListDao.getActiveAndFavoriteLists(getCurrentUserId())
-    }
-
-    override fun getShoppingListById(shoppingListIdForSearch: Long): Flow<ShoppingList?> {
-        return shoppingListDao.getShoppingListById(shoppingListIdForSearch, getCurrentUserId())
-    }
-
+    // --- ShoppingListItem ---
     override suspend fun addShoppingListItem(shoppingListItem: ShoppingListItem) {
         val userId = getCurrentUserId()
-        val currentItems = shoppingListItemDao.getItemsForList(shoppingListItem.shoppingListId, userId).first()
-        val nextSortOrder = (currentItems.maxOfOrNull { it.manualSortOrder } ?: -1) + 1
-
-        val itemToInsert = shoppingListItem.copy(
-            ownerId = userId,
-            shoppingListItemId = 0L,
-            manualSortOrder = nextSortOrder,
-            firestoreId = ""
-        )
-
-        val generatedLocalId = shoppingListItemDao.addShoppingListItem(itemToInsert)
-        val itemAfterRoomInsert = itemToInsert.copy(
-            shoppingListItemId = generatedLocalId
-        )
-
-        safeFirestoreCall(
-            currentFirestoreId = itemAfterRoomInsert.firestoreId,
-            collectionPath = "shoppingListItems",
-            dataObject = itemAfterRoomInsert,
-            forceCreateNew = true,
-            updateLocalWithFirestoreId = { newFsId, savedItem ->
-                if (newFsId.isNotBlank()) {
-                    shoppingListItemDao.updateShoppingListItem(savedItem.copy(firestoreId = newFsId))
-                }
-            }
-        )
+        val newId = System.currentTimeMillis()
+        val newItem = shoppingListItem.copy(shoppingListItemId = newId, ownerId = userId, firestoreId = newId.toString())
+        shoppingListItemDao.addShoppingListItem(newItem)
+        safeFirestoreSet("shoppingListItems", newItem.firestoreId, newItem)
     }
 
-
     override suspend fun updateShoppingListItem(shoppingListItem: ShoppingListItem) {
-        val userId = getCurrentUserId()
-        if (shoppingListItem.ownerId != userId && !(isUserGuest() && shoppingListItem.ownerId == CartyApplication.GUEST_USER_ID)) return
-        val finalItem = if (isUserGuest() && shoppingListItem.ownerId != CartyApplication.GUEST_USER_ID) {
-            shoppingListItem.copy(ownerId = CartyApplication.GUEST_USER_ID)
-        } else if (!isUserGuest() && shoppingListItem.ownerId == CartyApplication.GUEST_USER_ID) {
-            shoppingListItem.copy(ownerId = userId)
-        }
-        else {
-            shoppingListItem
-        }
-        shoppingListItemDao.updateShoppingListItem(finalItem)
-        safeFirestoreCall(
-            currentFirestoreId = finalItem.firestoreId,
-            collectionPath = "shoppingListItems",
-            dataObject = finalItem,
-            forceCreateNew = finalItem.firestoreId.isBlank() && !isUserGuest(),
-            updateLocalWithFirestoreId = { newFsId, savedObject ->
-                if(!isUserGuest()) shoppingListItemDao.updateShoppingListItem(savedObject.copy(firestoreId = newFsId))
-            }
-        )
+        shoppingListItemDao.updateShoppingListItem(shoppingListItem)
+        safeFirestoreSet("shoppingListItems", shoppingListItem.firestoreId, shoppingListItem)
     }
 
     override suspend fun updateShoppingListItems(items: List<ShoppingListItem>) {
-        val userId = getCurrentUserId()
-        database.withTransaction {
-            shoppingListItemDao.updateShoppingListItems(items.map {
-                if (isUserGuest() && it.ownerId != CartyApplication.GUEST_USER_ID) {
-                    it.copy(ownerId = CartyApplication.GUEST_USER_ID)
-                } else if (!isUserGuest() && it.ownerId == CartyApplication.GUEST_USER_ID) {
-                    it.copy(ownerId = userId)
-                } else {
-                    it
-                }
-            })
-        }
-        batchUpdateFirestore(
-            items = items,
-            collectionPath = "shoppingListItems",
-            idExtractor = { it.shoppingListItemId },
-            firestoreIdExtractor = { it.firestoreId },
-            ownerIdExtractor = { it.ownerId },
-            copyFunction = { item, fsId, ownerId ->
-                item.copy(
-                    firestoreId = fsId ?: item.firestoreId,
-                    ownerId = ownerId ?: item.ownerId
-                )
-            },
-            updateLocalWithFirestoreId = { updatedItemsWithFsId ->
-                database.withTransaction { shoppingListItemDao.updateShoppingListItems(updatedItemsWithFsId) }
-            },
-            userId = userId
-        )
+        shoppingListItemDao.updateShoppingListItems(items)
+        batchSet("shoppingListItems", items) { it.firestoreId }
     }
-
 
     override suspend fun deleteShoppingListItem(shoppingListItem: ShoppingListItem) {
-        val userId = getCurrentUserId()
-        if (shoppingListItem.ownerId != userId) return
-        val itemFirestoreId = shoppingListItem.firestoreId
         shoppingListItemDao.deleteShoppingListItem(shoppingListItem)
-        safeFirestoreDelete(itemFirestoreId, "shoppingListItems")
+        safeFirestoreDelete("shoppingListItems", shoppingListItem.firestoreId)
     }
 
-    override fun getItemsForList(shoppingListIdForSearch: Long): Flow<List<ShoppingListItem>> {
-        return shoppingListItemDao.getItemsForList(shoppingListIdForSearch, getCurrentUserId())
-    }
+    override fun getItemsForList(shoppingListIdForSearch: Long): Flow<List<ShoppingListItem>> = shoppingListItemDao.getItemsForList(shoppingListIdForSearch, getCurrentUserId())
+    override fun getShoppingListItemById(shoppingListItemIdForSearch: Long): Flow<ShoppingListItem?> = shoppingListItemDao.getShoppingListItemById(shoppingListItemIdForSearch, getCurrentUserId())
+    override suspend fun deleteShoppingListItemsById(shoppingListIdForDel: Long) {} // Covered by deleteShoppingList
+    override suspend fun deleteShoppingListItemsByProductId(productIdForDel: Long) {} // Covered by deleteProduct
 
-    override fun getShoppingListItemById(shoppingListItemIdForSearch: Long): Flow<ShoppingListItem?> {
-        return shoppingListItemDao.getShoppingListItemById(shoppingListItemIdForSearch, getCurrentUserId())
-    }
-
-    override suspend fun deleteShoppingListItemsById(shoppingListIdForDel: Long) {
-        val userId = getCurrentUserId()
-        val itemsInList = shoppingListItemDao.getItemsForList(shoppingListIdForDel, userId).first()
-        val batch = firestore.batch()
-        var itemsDeletedFromFirestore = false
-
-        itemsInList.forEach { item ->
-            if (!isUserGuest() && item.firestoreId.isNotBlank()) {
-                val itemDocRef = firestore.collection("shoppingListItems").document(item.firestoreId)
-                batch.delete(itemDocRef)
-                itemsDeletedFromFirestore = true
-            }
-        }
-        if(itemsDeletedFromFirestore && !isUserGuest()){
-            try {
-                batch.commit().await()
-            } catch (e: Exception) {}
-        }
-        shoppingListItemDao.deleteShoppingListItemsByListIdAndOwnerId(shoppingListIdForDel, getCurrentUserId())
-    }
-
-    override suspend fun deleteShoppingListItemsByProductId(productIdForDel: Long) {
-        val userId = getCurrentUserId()
-        val itemsToDelete = shoppingListItemDao.getAllItemsByProductIdAndOwnerId(productIdForDel, userId).first()
-        val batch = firestore.batch()
-        var itemsChangedInFirestore = false
-
-        itemsToDelete.forEach { item ->
-            val parentList = shoppingListDao.getShoppingListById(item.shoppingListId, userId).first()
-            if (parentList != null && !parentList.isCompleted) {
-                shoppingListItemDao.deleteShoppingListItem(item)
-                if (!isUserGuest() && item.firestoreId.isNotBlank()) {
-                    val itemDocRef = firestore.collection("shoppingListItems").document(item.firestoreId)
-                    batch.delete(itemDocRef)
-                    itemsChangedInFirestore = true
-                }
-            }
-        }
-        if(itemsChangedInFirestore && !isUserGuest()){
-            try {
-                batch.commit().await()
-            } catch (e: Exception) {}
-        }
-    }
-
-    private suspend fun <T: Any> safeFirestoreCall(
-        currentFirestoreId: String,
-        collectionPath: String,
-        dataObject: T,
-        forceCreateNew: Boolean,
-        updateLocalWithFirestoreId: suspend (String, T) -> Unit
-    ) {
-        if (!isUserGuest()) {
-            try {
-                if (forceCreateNew || currentFirestoreId.isBlank()) {
-                    val docRef = firestore.collection(collectionPath).add(dataObject).await()
-                    updateLocalWithFirestoreId(docRef.id, dataObject)
-                } else {
-                    firestore.collection(collectionPath).document(currentFirestoreId).set(dataObject).await()
-                    updateLocalWithFirestoreId(currentFirestoreId, dataObject)
-                }
-            } catch (e: Exception) {
-            }
-        } else {
-        }
-    }
-
-
+    // --- Auth & Sync ---
     override suspend fun fetchAndOverwriteLocalData() {
         if (isUserGuest()) return
         val userId = getCurrentUserId()
 
-        clearLocalUserData(userId)
-
         try {
-            val departmentsFS = firestore.collection("departments").whereEqualTo("ownerId", userId).get().await().toObjects<Department>()
-            departmentsFS.forEach { dept ->
-                val existing = departmentDao.getDepartmentById(dept.departmentId, userId).first()
-                if (existing == null) departmentDao.addDepartment(dept) else departmentDao.updateDepartment(dept)
-            }
+            database.withTransaction {
+                clearAllDataForOwner(userId)
 
-            val productsFS = firestore.collection("products").whereEqualTo("ownerId", userId).get().await().toObjects<Product>()
-            productsFS.forEach { prod ->
-                val existing = productDao.getProductById(prod.productId, userId).first()
-                if (existing == null) productDao.addProduct(prod) else productDao.updateProduct(prod)
-            }
+                val departments = fetchCollection<Department>("departments", userId, Department::class.java) { copy(firestoreId = it) }
+                if (departments.isNotEmpty()) departmentDao.updateDepartments(departments)
 
-            val listsFS = firestore.collection("shoppingLists").whereEqualTo("ownerId", userId).get().await().toObjects<ShoppingList>()
-            listsFS.forEach { list ->
-                val existing = shoppingListDao.getShoppingListById(list.shoppingListId, userId).first()
-                if (existing == null) shoppingListDao.addShoppingList(list) else shoppingListDao.updateShoppingList(list)
+                val products = fetchCollection<Product>("products", userId, Product::class.java) { copy(firestoreId = it) }
+                if (products.isNotEmpty()) productDao.updateProducts(products)
 
-            }
+                val lists = fetchCollection<ShoppingList>("shoppingLists", userId, ShoppingList::class.java) { copy(firestoreId = it) }
+                if (lists.isNotEmpty()) shoppingListDao.updateShoppingLists(lists)
 
-            val itemsFS = firestore.collection("shoppingListItems").whereEqualTo("ownerId", userId).get().await().toObjects<ShoppingListItem>()
-            itemsFS.forEach { item ->
-                val existing = shoppingListItemDao.getShoppingListItemById(item.shoppingListItemId, userId).first()
-                if (existing == null) shoppingListItemDao.addShoppingListItem(item) else shoppingListItemDao.updateShoppingListItem(item)
+                val items = fetchCollection<ShoppingListItem>("shoppingListItems", userId, ShoppingListItem::class.java) { copy(firestoreId = it) }
+                if (items.isNotEmpty()) shoppingListItemDao.updateShoppingListItems(items)
             }
         } catch (e: Exception) {
+            Log.e(TAG, "Error fetching and overwriting local data", e)
         }
     }
 
-    override suspend fun clearLocalGuestData() {
-        val guestId = CartyApplication.GUEST_USER_ID
-        departmentDao.deleteAllByOwnerId(guestId)
-        productDao.deleteAllByOwnerId(guestId)
-        val guestLists = shoppingListDao.getAllListsByOwnerId(guestId).first()
-        guestLists.forEach { list ->
-            shoppingListItemDao.deleteShoppingListItemsByListIdAndOwnerId(list.shoppingListId, guestId)
-        }
-        shoppingListDao.deleteAllByOwnerId(guestId)
-    }
-
-    override suspend fun clearLocalUserData(userId: String) {
-        departmentDao.deleteAllByOwnerId(userId)
-        productDao.deleteAllByOwnerId(userId)
-        val userLists = shoppingListDao.getAllListsByOwnerId(userId).first()
-        userLists.forEach { list ->
-            shoppingListItemDao.deleteShoppingListItemsByListIdAndOwnerId(list.shoppingListId, userId)
-        }
-        shoppingListDao.deleteAllByOwnerId(userId)
-    }
+    override suspend fun clearLocalGuestData() = clearAllDataForOwner(CartyApplication.GUEST_USER_ID)
+    override suspend fun clearLocalUserData(userId: String) = clearAllDataForOwner(userId)
+    override suspend fun clearLocalUserDataOnSignOut() { firebaseAuth.currentUser?.uid?.let { clearLocalUserData(it) } }
 
     override suspend fun checkIfUserHasDataOnServer(): Boolean {
         if (isUserGuest()) return false
         val userId = getCurrentUserId()
         return try {
-            val snapshot = firestore.collection("shoppingLists")
-                .whereEqualTo("ownerId", userId)
-                .limit(1)
-                .get()
-                .await()
-            !snapshot.isEmpty
-        } catch (e: Exception) {
-            false
+            !firestore.collection("shoppingLists").whereEqualTo("ownerId", userId).limit(1).get().await().isEmpty
+        } catch (e: Exception) { false }
+    }
+
+    // --- Generic Helpers ---
+    private suspend fun <T> fetchCollection(collection: String, userId: String, clazz: Class<T>, mapper: T.(String) -> T): List<T> {
+        val snapshot = firestore.collection(collection).whereEqualTo("ownerId", userId).get().await()
+        return snapshot.documents.mapNotNull { doc ->
+            doc.toObject(clazz)?.mapper(doc.id)
         }
     }
 
-    override suspend fun clearLocalUserDataOnSignOut() {
-        val userId = firebaseAuth.currentUser?.uid
-        if (userId != null) {
-            clearLocalUserData(userId)
+    private suspend fun clearAllDataForOwner(ownerId: String) {
+        database.withTransaction {
+            val lists = shoppingListDao.getAllListsByOwnerId(ownerId).first()
+            lists.forEach { list ->
+                shoppingListItemDao.deleteShoppingListItemsByListIdAndOwnerId(list.shoppingListId, ownerId)
+            }
+            shoppingListDao.deleteAllByOwnerId(ownerId)
+            productDao.deleteAllByOwnerId(ownerId)
+            departmentDao.deleteAllByOwnerId(ownerId)
         }
+    }
+
+    private suspend fun <T: Any> batchSet(collection: String, items: List<T>, idExtractor: (T) -> String) {
+        if (isUserGuest()) return
+        val batch = firestore.batch()
+        items.forEach {
+            val docId = idExtractor(it)
+            if (docId.isNotBlank()) {
+                batch.set(firestore.collection(collection).document(docId), it)
+            }
+        }
+        try { batch.commit().await() } catch(e: Exception) { Log.e(TAG, "Error batch setting $collection", e) }
     }
 }

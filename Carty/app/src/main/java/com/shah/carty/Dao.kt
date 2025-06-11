@@ -16,7 +16,7 @@ interface DepartmentDao {
     @Update
     suspend fun updateDepartment(department: Department)
 
-    @Update
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun updateDepartments(departments: List<Department>)
 
     @Delete
@@ -40,7 +40,7 @@ interface ProductDao {
     @Update
     suspend fun updateProduct(product: Product)
 
-    @Update
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun updateProducts(products: List<Product>)
 
     @Delete
@@ -73,7 +73,7 @@ interface ShoppingListDao {
     @Update
     suspend fun updateShoppingList(shoppingList: ShoppingList)
 
-    @Update
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun updateShoppingLists(shoppingLists: List<ShoppingList>)
 
     @Delete
@@ -100,7 +100,7 @@ interface ShoppingListItemDao {
     @Update
     suspend fun updateShoppingListItem(shoppingListItem: ShoppingListItem)
 
-    @Update
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun updateShoppingListItems(shoppingListItems: List<ShoppingListItem>)
 
     @Delete

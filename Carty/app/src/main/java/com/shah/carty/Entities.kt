@@ -9,7 +9,7 @@ import com.google.firebase.firestore.PropertyName
 
 @Entity
 data class Department(
-    @PrimaryKey(autoGenerate = true) val departmentId: Long = 0L,
+    @PrimaryKey val departmentId: Long = 0L,
     val departmentName: String = "",
     val ownerId: String = "",
     val manualSortIndex: Int = 0,
@@ -18,7 +18,7 @@ data class Department(
 
 @Entity
 data class Product(
-    @PrimaryKey(autoGenerate = true) val productId: Long = 0L,
+    @PrimaryKey val productId: Long = 0L,
     val productName: String = "",
     val departmentId: Long? = null,
     val defaultUnit: ProductUnit = ProductUnit.PIECE,
@@ -30,7 +30,7 @@ data class Product(
 
 @Entity
 data class ShoppingList(
-    @PrimaryKey(autoGenerate = true) val shoppingListId: Long = 0L,
+    @PrimaryKey val shoppingListId: Long = 0L,
     val shoppingListName: String = "",
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L,
@@ -44,7 +44,7 @@ data class ShoppingList(
 
 @Entity
 data class ShoppingListItem(
-    @PrimaryKey(autoGenerate = true) val shoppingListItemId: Long = 0L,
+    @PrimaryKey val shoppingListItemId: Long = 0L,
     val shoppingListId: Long = 0L,
     val productId: Long = 0L,
     val productName: String = "",

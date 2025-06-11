@@ -104,39 +104,14 @@ class LoginFragment : Fragment() {
     private fun handleLoginSuccess() {
         lifecycleScope.launch {
             binding.loginProgressBar?.isVisible = true
+
             (cartyApp.repository as OfflineCartyRepository).clearLocalGuestData()
+            cartyApp.repository.fetchAndOverwriteLocalData()
 
-            val userHadDataOnServer = cartyApp.repository.checkIfUserHasDataOnServer()
-
-            if (userHadDataOnServer) {
-                showRestoreDataDialog()
-            } else {
-                binding.loginProgressBar?.isVisible = false
-                navigateToMainApp()
-            }
+            binding.loginProgressBar?.isVisible = false
+            navigateToMainApp()
         }
     }
-
-    private fun showRestoreDataDialog() {
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle(getString(R.string.restore_data_title))
-            .setMessage(getString(R.string.restore_data_message))
-            .setPositiveButton(getString(R.string.restore_data_positive_button)) { _, _ ->
-                lifecycleScope.launch {
-                    binding.loginProgressBar?.isVisible = true
-                    cartyApp.repository.fetchAndOverwriteLocalData()
-                    binding.loginProgressBar?.isVisible = false
-                    navigateToMainApp()
-                }
-            }
-            .setNegativeButton(getString(R.string.restore_data_negative_button)) { _, _ ->
-                binding.loginProgressBar?.isVisible = false
-                navigateToMainApp()
-            }
-            .setCancelable(false)
-            .show()
-    }
-
 
     private fun navigateToMainApp() {
         val action = LoginFragmentDirections.actionLoginFragmentToShoppingListsFragment()

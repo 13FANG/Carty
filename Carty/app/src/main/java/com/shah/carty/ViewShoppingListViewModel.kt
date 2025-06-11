@@ -217,8 +217,7 @@ class ViewShoppingListViewModel(
         if (currentShoppingList.departmentOrder != newDepartmentOrder) {
             viewModelScope.launch {
                 val updatedList = currentShoppingList.copy(
-                    departmentOrder = newDepartmentOrder,
-                    updatedAt = System.currentTimeMillis()
+                    departmentOrder = newDepartmentOrder
                 )
                 repository.updateShoppingList(updatedList)
             }
@@ -255,12 +254,6 @@ class ViewShoppingListViewModel(
             if (significantChangeFound) {
                 processedItemsWithNewSortOrder.forEach { item -> }
                 repository.updateShoppingListItems(processedItemsWithNewSortOrder)
-                uiState.value.currentList?.let { list ->
-                    if (!list.isCompleted) {
-                        val updatedList = list.copy(updatedAt = System.currentTimeMillis())
-                        repository.updateShoppingList(updatedList)
-                    }
-                }
             } else {}
         }
     }
@@ -300,8 +293,7 @@ class ViewShoppingListViewModel(
         uiState.value.currentList?.let { list ->
             viewModelScope.launch {
                 val updatedList = list.copy(
-                    isFavorite = !list.isFavorite,
-                    updatedAt = System.currentTimeMillis()
+                    isFavorite = !list.isFavorite
                 )
                 repository.updateShoppingList(updatedList)
             }
@@ -336,12 +328,6 @@ class ViewShoppingListViewModel(
         viewModelScope.launch {
             val updatedItem = item.copy(isBought = isBought)
             repository.updateShoppingListItem(updatedItem)
-            uiState.value.currentList?.let { list ->
-                if (!list.isCompleted) {
-                    val updatedList = list.copy(updatedAt = System.currentTimeMillis())
-                    repository.updateShoppingList(updatedList)
-                }
-            }
         }
     }
 

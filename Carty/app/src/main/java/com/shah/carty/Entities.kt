@@ -5,6 +5,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverter
 import com.google.firebase.firestore.Exclude
+import com.google.firebase.firestore.PropertyName
 
 @Entity
 data class Department(
@@ -33,8 +34,8 @@ data class ShoppingList(
     val shoppingListName: String = "",
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L,
-    val isFavorite: Boolean = false,
-    val isCompleted: Boolean = false,
+    @get:PropertyName("isFavorite") val isFavorite: Boolean = false,
+    @get:PropertyName("isCompleted") val isCompleted: Boolean = false,
     val departmentOrder: List<Long> = emptyList(),
     val manualSortIndex: Int = 0,
     val ownerId: String = "",
@@ -50,7 +51,7 @@ data class ShoppingListItem(
     val quantity: Double = 0.0,
     val unit: ProductUnit = ProductUnit.PIECE,
     val price: Double? = null,
-    val isBought: Boolean = false,
+    @get:PropertyName("isBought") val isBought: Boolean = false,
     val departmentIdAtPurchase: Long? = null,
     val manualSortOrder: Int = 0,
     val ownerId: String = "",

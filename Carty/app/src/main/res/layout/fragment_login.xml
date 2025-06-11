@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFFFFF">
+    android:background="#FFFFFF"
+    android:importantForAutofill="noExcludeDescendants">
 
     <TextView
         android:id="@+id/loginLable"
@@ -35,13 +36,14 @@
             <EditText
                 android:id="@+id/authEmailET"
                 android:layout_width="300dp"
-                android:layout_height="42dp"
+                android:layout_height="48dp"
                 android:layout_marginTop="72dp"
                 android:ems="10"
                 android:fontFamily="@font/pf_highway_sans_pro"
                 android:hint="Email"
                 android:inputType="textEmailAddress"
                 android:textSize="24sp"
+                android:background="@drawable/edittext_background_fix"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
@@ -49,7 +51,7 @@
             <EditText
                 android:id="@+id/authPasswordET"
                 android:layout_width="0dp"
-                android:layout_height="42dp"
+                android:layout_height="48dp"
                 android:layout_marginTop="16dp"
                 android:ems="10"
                 android:fontFamily="@font/pf_highway_sans_pro"

@@ -123,7 +123,6 @@ class LoginFragment : Fragment() {
         val dialogView = dialogBinding.root
 
         val dialog = MaterialAlertDialogBuilder(requireContext())
-            .setTitle(getString(R.string.password_recovery_title))
             .setView(dialogView)
             .setCancelable(true)
             .create()

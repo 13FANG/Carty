@@ -130,12 +130,12 @@ class EditProductFragment : Fragment() {
     }
 
     private fun setupSpinners() {
-        departmentArrayAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, mutableListOf(getString(R.string.no_department_selected)))
-        departmentArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        departmentArrayAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item_custom, mutableListOf(getString(R.string.no_department_selected)))
+        departmentArrayAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item_custom)
         binding.departmentSpinner.adapter = departmentArrayAdapter
 
-        unitDisplayArrayAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, mutableListOf<String>())
-        unitDisplayArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        unitDisplayArrayAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item_custom, mutableListOf<String>())
+        unitDisplayArrayAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item_custom)
         binding.unitSpinner.adapter = unitDisplayArrayAdapter
 
 

@@ -4,16 +4,16 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="2dp"
+    android:layout_margin="4dp"
     app:cardCornerRadius="10dp"
     app:cardElevation="4dp"
-    app:strokeColor="#3F51B5"
+    app:strokeColor="#00FFFFFF"
     app:strokeWidth="4dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#FFFFFF"
+        android:background="#00D9FF"
         android:padding="16dp">
 
         <TextView
@@ -23,7 +23,7 @@
             android:layout_marginEnd="4dp"
             android:fontFamily="@font/pf_highway_sans_pro"
             android:text="Название списка"
-            android:textColor="#3F51B5"
+            android:textColor="#FFFF"
             android:textColorHint="#000000"
             android:textSize="28sp"
             android:textStyle="bold"
@@ -38,7 +38,7 @@
             android:layout_marginEnd="4dp"
             android:fontFamily="@font/pf_highway_sans_pro"
             android:text="Информация о списке"
-            android:textColor="#3F51B5"
+            android:textColor="#FFFF"
             android:textColorHint="#000000"
             android:textSize="24sp"
             app:layout_constraintEnd_toStartOf="@+id/favIconIV"
@@ -50,11 +50,11 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:scaleType="fitCenter"
-            app:tint="#3F51B5"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:srcCompat="@drawable/favoriteicon" />
+            app:srcCompat="@drawable/favoriteicon"
+            app:tint="#FFFF" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

@@ -4,16 +4,16 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:layout_margin="4dp"
     app:cardCornerRadius="10dp"
-    android:layout_margin="2dp"
     app:cardElevation="4dp"
-    app:strokeColor="#3F51B5"
+    app:strokeColor="#00FFFFFF"
     app:strokeWidth="4dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#FFFFFF"
+        android:background="#00D9FF"
         android:padding="16dp"
         android:paddingStart="8dp">
 
@@ -23,7 +23,7 @@
             android:layout_height="wrap_content"
             android:fontFamily="@font/pf_highway_sans_pro"
             android:text="Название товара"
-            android:textColor="#3F51B5"
+            android:textColor="#FFFF"
             android:textColorHint="#000000"
             android:textSize="30sp"
             android:textStyle="bold"
@@ -36,10 +36,10 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:fontFamily="@font/pf_highway_sans_pro"
-            android:textColor="#3F51B5"
+            android:textColor="#FFFF"
             android:textSize="24sp"
-            android:visibility="gone"
             android:textStyle="bold"
+            android:visibility="gone"
             app:layout_constraintEnd_toEndOf="@+id/itemNameTV"
             app:layout_constraintStart_toStartOf="@+id/itemNameTV"
             app:layout_constraintTop_toBottomOf="@+id/itemNameTV"
@@ -52,7 +52,7 @@
             android:layout_height="wrap_content"
             android:fontFamily="@font/pf_highway_sans_pro"
             android:text="Количество и ед. изм."
-            android:textColor="#3F51B5"
+            android:textColor="#FFFF"
             android:textColorHint="#000000"
             android:textSize="24sp"
             android:textStyle="bold"
@@ -61,12 +61,12 @@
             app:layout_constraintTop_toBottomOf="@+id/itemDepartmentNameTV" />
 
         <TextView
-            android:id="@+id/itemQuantityUnitTV2"
+            android:id="@+id/itemQuantityUnitTV"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:fontFamily="@font/pf_highway_sans_pro"
             android:text="1549р. за ед. изм."
-            android:textColor="#3F51B5"
+            android:textColor="#FFFF"
             android:textColorHint="#000000"
             android:textSize="24sp"
             android:textStyle="bold"
@@ -78,6 +78,8 @@
             android:id="@+id/itemBoughtCB"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:checked="true"
+            app:buttonTint="#0D47A1"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
@@ -92,7 +94,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:srcCompat="@drawable/binicon"
-            app:tint="#F44336" />
+            app:tint="#FFFF" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

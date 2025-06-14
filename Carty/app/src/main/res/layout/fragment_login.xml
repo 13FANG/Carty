@@ -7,6 +7,17 @@
     android:background="#FFFFFF"
     android:importantForAutofill="noExcludeDescendants">
 
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:scaleType="fitXY"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/backgradient" />
+
     <TextView
         android:id="@+id/loginLable"
         android:layout_width="300dp"
@@ -16,13 +27,14 @@
         android:lineSpacingExtra="4dp"
         android:text="Вход в аккаунт"
         android:textAlignment="center"
-        android:textColor="#3F50B4"
+        android:textColor="#FFFFFF"
         android:textSize="48sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <ScrollView
+        android:id="@+id/scrollView2"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_marginTop="16dp"
@@ -30,20 +42,22 @@
         app:layout_constraintTop_toBottomOf="@+id/loginLable">
 
         <androidx.constraintlayout.widget.ConstraintLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_width="400dp"
+            android:layout_height="48dp">
 
             <EditText
                 android:id="@+id/authEmailET"
                 android:layout_width="300dp"
                 android:layout_height="48dp"
                 android:layout_marginTop="72dp"
+                android:backgroundTint="#FFFFFF"
                 android:ems="10"
                 android:fontFamily="@font/pf_highway_sans_pro"
                 android:hint="Email"
                 android:inputType="textEmailAddress"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#FFFFFF"
                 android:textSize="24sp"
-                android:background="@drawable/edittext_background_fix"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
@@ -53,10 +67,13 @@
                 android:layout_width="0dp"
                 android:layout_height="48dp"
                 android:layout_marginTop="16dp"
+                android:backgroundTint="#FFFFFF"
                 android:ems="10"
                 android:fontFamily="@font/pf_highway_sans_pro"
                 android:hint="Пароль"
                 android:inputType="textPassword"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#FFFFFF"
                 android:textSize="24sp"
                 app:layout_constraintEnd_toEndOf="@+id/authEmailET"
                 app:layout_constraintStart_toStartOf="@+id/authEmailET"
@@ -68,10 +85,11 @@
                 android:layout_width="0dp"
                 android:layout_height="55dp"
                 android:layout_marginTop="16dp"
-                android:backgroundTint="#3F51B5"
+                android:backgroundTint="#0D47A1"
                 android:fontFamily="@font/pf_highway_sans_pro"
                 android:text="войти"
-                android:textSize="24sp"
+                android:textColor="#FFFFFF"
+                android:textSize="30sp"
                 app:cornerRadius="10dp"
                 app:layout_constraintEnd_toEndOf="@+id/authEmailET"
                 app:layout_constraintStart_toStartOf="@+id/authEmailET"
@@ -86,8 +104,8 @@
                 android:fontFamily="@font/ropa_sans_sc_ptt"
                 android:text="Нет аккаунта? Зарегистрироваться"
                 android:textAlignment="center"
-                android:textColor="#3F50B4"
-                android:textSize="16sp"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
                 android:textStyle="bold"
                 app:layout_constraintEnd_toEndOf="@+id/logInButton"
                 app:layout_constraintStart_toStartOf="@+id/logInButton"
@@ -102,8 +120,8 @@
                 android:fontFamily="@font/ropa_sans_sc_ptt"
                 android:text="Восстановить пароль"
                 android:textAlignment="center"
-                android:textColor="#3F50B4"
-                android:textSize="16sp"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
                 android:textStyle="bold"
                 app:layout_constraintEnd_toEndOf="@+id/logInButton"
                 app:layout_constraintStart_toStartOf="@+id/logInButton"
@@ -118,8 +136,8 @@
                 android:fontFamily="@font/ropa_sans_sc_ptt"
                 android:text="Продолжить как гость"
                 android:textAlignment="center"
-                android:textColor="#3F50B4"
-                android:textSize="16sp"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
                 android:textStyle="bold"
                 app:layout_constraintEnd_toEndOf="@+id/logInButton"
                 app:layout_constraintStart_toStartOf="@+id/logInButton"
@@ -138,4 +156,5 @@
         app:layout_constraintEnd_toEndOf="@+id/loginLable"
         app:layout_constraintStart_toStartOf="@+id/loginLable"
         app:layout_constraintTop_toBottomOf="@+id/loginLable" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -4,7 +4,19 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFFFFF">
+    android:background="#FFFFFF"
+    android:backgroundTint="#FFFFFF">
+
+    <ImageView
+        android:id="@+id/imageView7"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:scaleType="fitXY"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/backgradient" />
 
     <TextView
         android:id="@+id/addProductLable"
@@ -14,11 +26,11 @@
         android:fontFamily="@font/uncage"
         android:text="новый товар"
         android:textAlignment="center"
-        android:textColor="#3F50B4"
         android:textSize="48sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        android:textColor="#FFFFFF"/>
 
     <ScrollView
         android:layout_width="match_parent"
@@ -36,10 +48,12 @@
                 android:layout_width="300dp"
                 android:layout_height="48dp"
                 android:layout_marginTop="56dp"
+                android:backgroundTint="#FFFFFF"
                 android:ems="10"
                 android:fontFamily="@font/pf_highway_sans_pro"
                 android:hint="Название товара"
                 android:inputType="textCapSentences"
+                android:textColorHint="#FFFFFF"
                 android:textSize="24sp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -53,6 +67,7 @@
                 android:fontFamily="@font/pf_highway_sans_pro"
                 android:minHeight="48dp"
                 android:textSize="24sp"
+                android:backgroundTint="#FFFFFF"
                 app:layout_constraintEnd_toEndOf="@+id/productNameET"
                 app:layout_constraintStart_toStartOf="@+id/productNameET"
                 app:layout_constraintTop_toBottomOf="@+id/productNameET" />
@@ -62,10 +77,12 @@
                 android:layout_width="0dp"
                 android:layout_height="48dp"
                 android:layout_marginTop="16dp"
+                android:backgroundTint="#FFFFFF"
                 android:ems="10"
                 android:fontFamily="@font/pf_highway_sans_pro"
                 android:hint="Стандартная цена"
                 android:inputType="number"
+                android:textColorHint="#FFFFFF"
                 android:textSize="24sp"
                 app:layout_constraintEnd_toEndOf="@+id/departmentSpinner"
                 app:layout_constraintStart_toStartOf="@+id/departmentSpinner"
@@ -79,6 +96,7 @@
                 android:fontFamily="@font/pf_highway_sans_pro"
                 android:minHeight="48dp"
                 android:textSize="24sp"
+                android:backgroundTint="#FFFFFF"
                 app:layout_constraintEnd_toEndOf="@+id/priceET"
                 app:layout_constraintStart_toStartOf="@+id/priceET"
                 app:layout_constraintTop_toBottomOf="@+id/priceET" />
@@ -89,7 +107,7 @@
                 android:layout_width="0dp"
                 android:layout_height="55dp"
                 android:layout_marginTop="16dp"
-                android:backgroundTint="#3F51B5"
+                android:backgroundTint="#0D47A1"
                 android:fontFamily="@font/pf_highway_sans_pro"
                 android:text="сохранить"
                 android:textColor="#FFFF"
@@ -98,6 +116,7 @@
                 android:textSize="24sp"
                 app:cornerRadius="10dp"
                 app:layout_constraintEnd_toEndOf="@+id/unitSpinner"
+                app:layout_constraintHorizontal_bias="0.0"
                 app:layout_constraintStart_toStartOf="@+id/unitSpinner"
                 app:layout_constraintTop_toBottomOf="@+id/unitSpinner" />
 
@@ -110,10 +129,11 @@
                 android:fontFamily="@font/ropa_sans_sc_ptt"
                 android:text="Создать новый отдлел"
                 android:textAlignment="center"
-                android:textColor="#3F50B4"
+                android:textColor="#FFFFFF"
                 android:textSize="16sp"
                 android:textStyle="bold"
                 app:layout_constraintEnd_toEndOf="@+id/saveProductButton"
+                app:layout_constraintHorizontal_bias="0.49"
                 app:layout_constraintStart_toStartOf="@+id/saveProductButton"
                 app:layout_constraintTop_toBottomOf="@+id/saveProductButton" />
 

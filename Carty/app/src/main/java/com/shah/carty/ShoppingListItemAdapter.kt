@@ -134,7 +134,7 @@ class ShoppingListItemAdapter(
             binding.itemQuantityTV.text = quantityText
 
             val pricePerUnitText = item.price?.let { "%.2f руб. за %s".format(it, unitDisplayName) } ?: "Цена не указана"
-            binding.itemQuantityUnitTV2.text = pricePerUnitText
+            binding.itemQuantityUnitTV.text = pricePerUnitText
 
             binding.itemBoughtCB.setOnCheckedChangeListener(null)
             binding.itemBoughtCB.isChecked = item.isBought
@@ -166,10 +166,12 @@ class ShoppingListItemAdapter(
                 binding.itemNameTV.paintFlags = binding.itemNameTV.paintFlags or paintFlagsStrikeThru
                 binding.itemQuantityTV.paintFlags = binding.itemQuantityTV.paintFlags or paintFlagsStrikeThru
                 binding.itemDepartmentNameTV.paintFlags = binding.itemDepartmentNameTV.paintFlags or paintFlagsStrikeThru
+                binding.itemQuantityUnitTV.paintFlags = binding.itemQuantityUnitTV.paintFlags or paintFlagsStrikeThru
             } else {
                 binding.itemNameTV.paintFlags = binding.itemNameTV.paintFlags and paintFlagsClear
                 binding.itemQuantityTV.paintFlags = binding.itemQuantityTV.paintFlags and paintFlagsClear
                 binding.itemDepartmentNameTV.paintFlags = binding.itemDepartmentNameTV.paintFlags and paintFlagsClear
+                binding.itemQuantityUnitTV.paintFlags = binding.itemQuantityUnitTV.paintFlags and paintFlagsClear
             }
         }
 

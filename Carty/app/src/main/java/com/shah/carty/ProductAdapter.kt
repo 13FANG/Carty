@@ -73,10 +73,10 @@ class ProductAdapter(
     class ProductViewHolder(private val binding: ItemProductBinding) :
         RecyclerView.ViewHolder(binding.root), ItemTouchHelperViewHolder {
         fun bind(product: Product, getDepartmentName: (Long?) -> String, onDeleteClicked: (Product) -> Unit) {
-            binding.productNameTV.text = product.productName
+            binding.productNameTV.text = "Товар: ${product.productName}"
             binding.departmentNameTV.text = getDepartmentName(product.departmentId)
             binding.unitProductItemTV.text = product.defaultUnit.getDisplayName(itemView.context)
-            binding.priceTV.text = product.defaultPrice?.toString() ?: "N/A"
+            binding.priceTV.text = product.defaultPrice?.toString() ?: "?"
 
             binding.delItemProductImageButton.setOnClickListener {
                 onDeleteClicked(product)

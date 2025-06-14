@@ -31,30 +31,61 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
+        <TextView
+            android:id="@+id/quantityAddDialTV"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/pf_highway_sans_pro"
+            android:text="Количество:"
+            android:textColor="#3F51B5"
+            android:textColorHint="#000000"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toBottomOf="@+id/addItemQuantityET"
+            app:layout_constraintStart_toStartOf="@+id/addItemProductNameTV"
+            app:layout_constraintTop_toTopOf="@+id/addItemQuantityET"
+            app:layout_constraintVertical_bias="0.416" />
+
         <EditText
             android:id="@+id/addItemQuantityET"
             android:layout_width="0dp"
             android:layout_height="48dp"
+            android:layout_marginStart="4dp"
             android:layout_marginTop="8dp"
             android:fontFamily="@font/ropa_sans_sc_ptt"
             android:hint="Количество"
             android:inputType="numberDecimal"
             android:textSize="20sp"
             app:layout_constraintEnd_toEndOf="@+id/addItemProductNameTV"
-            app:layout_constraintStart_toStartOf="@+id/addItemProductNameTV"
+            app:layout_constraintStart_toEndOf="@+id/priceAddDialTV"
             app:layout_constraintTop_toBottomOf="@+id/addItemProductNameTV" />
+
+        <TextView
+            android:id="@+id/priceAddDialTV"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/pf_highway_sans_pro"
+            android:text="Цена за ед.:"
+            android:textColor="#3F51B5"
+            android:textColorHint="#000000"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toBottomOf="@+id/addItemPriceET"
+            app:layout_constraintStart_toStartOf="@+id/quantityAddDialTV"
+            app:layout_constraintTop_toTopOf="@+id/addItemPriceET" />
 
         <EditText
             android:id="@+id/addItemPriceET"
             android:layout_width="0dp"
             android:layout_height="48dp"
+            android:layout_marginStart="4dp"
             android:layout_marginTop="8dp"
             android:fontFamily="@font/ropa_sans_sc_ptt"
-            android:hint="Цена за единицу (необязательно)"
+            android:hint="Цена за единицу"
             android:inputType="numberDecimal"
             android:textSize="20sp"
             app:layout_constraintEnd_toEndOf="@+id/addItemProductNameTV"
-            app:layout_constraintStart_toStartOf="@+id/addItemProductNameTV"
+            app:layout_constraintStart_toEndOf="@+id/priceAddDialTV"
             app:layout_constraintTop_toBottomOf="@+id/addItemQuantityET" />
 
         <Button

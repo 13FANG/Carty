@@ -52,6 +52,7 @@
             android:textColorHint="#000000"
             android:textSize="30sp"
             android:textStyle="bold"
+            android:singleLine="false"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@+id/productNameLableTV"
             app:layout_constraintTop_toTopOf="@+id/productNameLableTV" />
@@ -60,15 +61,15 @@
             android:id="@+id/departmentLableTV"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
             android:fontFamily="@font/pf_highway_sans_pro"
             android:text="Отдел: "
             android:textColor="#3F51B5"
             android:textColorHint="#000000"
             android:textSize="24sp"
+            android:layout_marginTop="4dp"
             android:textStyle="bold"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/productNameLableTV" />
+            app:layout_constraintTop_toBottomOf="@+id/productNameTV" />
 
         <TextView
             android:id="@+id/departmentNameTV"
@@ -89,15 +90,15 @@
             android:id="@+id/unitLableTV"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
             android:fontFamily="@font/pf_highway_sans_pro"
             android:text="Ед. изм: "
             android:textColor="#3F51B5"
             android:textColorHint="#000000"
+            android:layout_marginTop="4dp"
             android:textSize="24sp"
             android:textStyle="bold"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/departmentLableTV" />
+            app:layout_constraintTop_toBottomOf="@+id/departmentNameTV" />
 
         <TextView
             android:id="@+id/unitProductItemTV"

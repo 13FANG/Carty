@@ -50,8 +50,9 @@
         <Button
             android:id="@+id/delYesButton"
             style="@style/Widget.Material3.Button"
-            android:layout_width="144dp"
+            android:layout_width="100dp"
             android:layout_height="48dp"
+            android:layout_marginStart="32dp"
             android:layout_marginTop="16dp"
             android:layout_marginBottom="16dp"
             android:backgroundTint="#3F51B5"
@@ -60,15 +61,16 @@
             android:textSize="24sp"
             app:cornerRadius="10dp"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="@+id/delDialInfoTV"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/delDialInfoTV" />
 
         <Button
             android:id="@+id/delNoButton"
             style="@style/Widget.Material3.Button"
-            android:layout_width="144dp"
+            android:layout_width="100dp"
             android:layout_height="48dp"
             android:layout_marginTop="16dp"
+            android:layout_marginEnd="32dp"
             android:layout_marginBottom="16dp"
             android:backgroundTint="#3F51B5"
             android:fontFamily="@font/pf_highway_sans_pro"
@@ -76,7 +78,7 @@
             android:textSize="24sp"
             app:cornerRadius="10dp"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="@+id/delDialInfoTV"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/delDialInfoTV" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 

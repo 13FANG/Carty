@@ -35,7 +35,7 @@
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="32dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/addProductLable">
 
@@ -65,10 +65,10 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
+                android:backgroundTint="#FFFFFF"
                 android:fontFamily="@font/pf_highway_sans_pro"
                 android:minHeight="48dp"
                 android:textSize="24sp"
-                android:backgroundTint="#FFFFFF"
                 app:layout_constraintEnd_toEndOf="@+id/productNameET"
                 app:layout_constraintStart_toStartOf="@+id/productNameET"
                 app:layout_constraintTop_toBottomOf="@+id/productNameET" />
@@ -95,10 +95,10 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
+                android:backgroundTint="#FFFFFF"
                 android:fontFamily="@font/pf_highway_sans_pro"
                 android:minHeight="48dp"
                 android:textSize="24sp"
-                android:backgroundTint="#FFFFFF"
                 app:layout_constraintEnd_toEndOf="@+id/priceET"
                 app:layout_constraintStart_toStartOf="@+id/priceET"
                 app:layout_constraintTop_toBottomOf="@+id/priceET" />

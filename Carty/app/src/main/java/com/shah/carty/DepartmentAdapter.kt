@@ -6,7 +6,6 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.shah.carty.databinding.ItemDepartmentBinding
-import java.util.ArrayList
 import java.util.Collections
 
 class DepartmentAdapter(
@@ -15,17 +14,6 @@ class DepartmentAdapter(
     private val onOrderChanged: (List<Department>) -> Unit
 ) : ListAdapter<Department, DepartmentAdapter.DepartmentViewHolder>(DepartmentDiffCallback()),
     ItemTouchHelperAdapter {
-
-    private val internalList: MutableList<Department> = ArrayList()
-
-    override fun submitList(list: List<Department>?) {
-        super.submitList(list) {
-            internalList.clear()
-            if (list != null) {
-                internalList.addAll(list)
-            }
-        }
-    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DepartmentViewHolder {
         val binding = ItemDepartmentBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -40,30 +28,19 @@ class DepartmentAdapter(
         }
     }
 
-    override fun getItemCount(): Int {
-        return currentList.size
-    }
-
     override fun isItemDraggable(position: Int): Boolean {
-        return position < currentList.size
+        return position < itemCount
     }
 
     override fun onItemMove(fromPosition: Int, toPosition: Int): Boolean {
-        if (fromPosition < toPosition) {
-            for (i in fromPosition until toPosition) {
-                Collections.swap(internalList, i, i + 1)
-            }
-        } else {
-            for (i in fromPosition downTo toPosition + 1) {
-                Collections.swap(internalList, i, i - 1)
-            }
-        }
-        notifyItemMoved(fromPosition, toPosition)
+        val list = currentList.toMutableList()
+        Collections.swap(list, fromPosition, toPosition)
+        submitList(list)
         return true
     }
 
     override fun onDragFinished() {
-        onOrderChanged(ArrayList(internalList))
+        onOrderChanged(currentList)
     }
 
     override fun onItemDismiss(position: Int) {}

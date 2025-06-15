@@ -1,9 +1,7 @@
 package com.shah.carty
 
 import android.graphics.Paint
-import android.util.Log
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
@@ -11,7 +9,6 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.shah.carty.databinding.ItemDepartmentHeaderBinding
 import com.shah.carty.databinding.ItemShoppingListItemBinding
-import java.util.ArrayList
 import java.util.Collections
 
 class ShoppingListItemAdapter(
@@ -24,25 +21,11 @@ class ShoppingListItemAdapter(
 ) : ListAdapter<DisplayableItem, RecyclerView.ViewHolder>(DisplayableItemDiffCallback()),
     ItemTouchHelperAdapter {
 
-    private val internalList: MutableList<DisplayableItem> = ArrayList()
     var isGroupingEnabled: Boolean = true
 
     companion object {
         const val VIEW_TYPE_HEADER = 0
         const val VIEW_TYPE_ITEM = 1
-    }
-
-    override fun submitList(list: List<DisplayableItem>?) {
-        super.submitList(list) {
-            internalList.clear()
-            if (list != null) {
-                internalList.addAll(list)
-            }
-        }
-    }
-
-    override fun getItemCount(): Int {
-        return currentList.size
     }
 
     override fun isItemDraggable(position: Int): Boolean {
@@ -88,10 +71,10 @@ class ShoppingListItemAdapter(
     }
 
     override fun onItemMove(fromPosition: Int, toPosition: Int): Boolean {
-        val fromItem = internalList[fromPosition]
-        val toItem = internalList[toPosition]
+        val list = currentList.toMutableList()
+        val fromItem = list[fromPosition]
+        val toItem = list[toPosition]
 
-        // Защита от перетаскивания на заголовок или в другую группу
         if (isGroupingEnabled) {
             if (fromItem is DisplayableItem.ShoppingListItemRow && toItem is DisplayableItem.ShoppingListItemRow) {
                 if (fromItem.item.departmentIdAtPurchase != toItem.item.departmentIdAtPurchase) {
@@ -100,15 +83,19 @@ class ShoppingListItemAdapter(
             } else {
                 return false
             }
+        } else {
+            if (fromItem is DisplayableItem.DepartmentHeader || toItem is DisplayableItem.DepartmentHeader) {
+                return false
+            }
         }
 
-        Collections.swap(internalList, fromPosition, toPosition)
-        notifyItemMoved(fromPosition, toPosition)
+        Collections.swap(list, fromPosition, toPosition)
+        submitList(list)
         return true
     }
 
     override fun onDragFinished() {
-        onOrderChanged(ArrayList(internalList))
+        onOrderChanged(currentList)
     }
 
     override fun onItemDismiss(position: Int) {}
@@ -166,12 +153,10 @@ class ShoppingListItemAdapter(
                 binding.itemNameTV.paintFlags = binding.itemNameTV.paintFlags or paintFlagsStrikeThru
                 binding.itemQuantityTV.paintFlags = binding.itemQuantityTV.paintFlags or paintFlagsStrikeThru
                 binding.itemDepartmentNameTV.paintFlags = binding.itemDepartmentNameTV.paintFlags or paintFlagsStrikeThru
-                binding.itemQuantityUnitTV.paintFlags = binding.itemQuantityUnitTV.paintFlags or paintFlagsStrikeThru
             } else {
                 binding.itemNameTV.paintFlags = binding.itemNameTV.paintFlags and paintFlagsClear
                 binding.itemQuantityTV.paintFlags = binding.itemQuantityTV.paintFlags and paintFlagsClear
                 binding.itemDepartmentNameTV.paintFlags = binding.itemDepartmentNameTV.paintFlags and paintFlagsClear
-                binding.itemQuantityUnitTV.paintFlags = binding.itemQuantityUnitTV.paintFlags and paintFlagsClear
             }
         }
 

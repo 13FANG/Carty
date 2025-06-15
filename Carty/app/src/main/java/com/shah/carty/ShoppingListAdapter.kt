@@ -7,27 +7,15 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.shah.carty.databinding.ItemShoppingListBinding
 import java.text.SimpleDateFormat
+import java.util.Collections
 import java.util.Date
 import java.util.Locale
-import java.util.ArrayList
-import java.util.Collections
 
 class ShoppingListAdapter(
     private val onItemClicked: (ShoppingList) -> Unit,
     private val onOrderChanged: (List<ShoppingList>) -> Unit
 ) : ListAdapter<ShoppingList, ShoppingListAdapter.ShoppingListViewHolder>(ShoppingListDiffCallback()),
     ItemTouchHelperAdapter {
-
-    private val internalList: MutableList<ShoppingList> = ArrayList()
-
-    override fun submitList(list: List<ShoppingList>?) {
-        super.submitList(list) {
-            internalList.clear()
-            if (list != null) {
-                internalList.addAll(list)
-            }
-        }
-    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ShoppingListViewHolder {
         val binding = ItemShoppingListBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -42,34 +30,22 @@ class ShoppingListAdapter(
         }
     }
 
-    override fun getItemCount(): Int {
-        return currentList.size
-    }
-
     override fun isItemDraggable(position: Int): Boolean {
-        return position < currentList.size
+        return position < itemCount
     }
 
     override fun onItemMove(fromPosition: Int, toPosition: Int): Boolean {
-        if (fromPosition < toPosition) {
-            for (i in fromPosition until toPosition) {
-                Collections.swap(internalList, i, i + 1)
-            }
-        } else {
-            for (i in fromPosition downTo toPosition + 1) {
-                Collections.swap(internalList, i, i - 1)
-            }
-        }
-        notifyItemMoved(fromPosition, toPosition)
+        val list = currentList.toMutableList()
+        Collections.swap(list, fromPosition, toPosition)
+        submitList(list)
         return true
     }
 
     override fun onDragFinished() {
-        onOrderChanged(ArrayList(internalList))
+        onOrderChanged(currentList)
     }
 
     override fun onItemDismiss(position: Int) {}
-
 
     class ShoppingListViewHolder(private val binding: ItemShoppingListBinding) :
         RecyclerView.ViewHolder(binding.root), ItemTouchHelperViewHolder {

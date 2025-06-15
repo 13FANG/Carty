@@ -3,7 +3,7 @@
     <string name="confirm_delete_title">Подтверждение</string>
     <string name="confirm_delete_department_message">Вы уверены, что хотите удалить отдел \"%1$s\"?.</string>
     <string name="add_department_title">Добавление отдела</string>
-    <string name="edit_department_title">Редактирование отдела</string>
+    <string name="edit_department_title">Изменение отдела</string>
     <string name="confirm_delete_product_message">Вы уверены, что хотите удалить товар \"%1$s\"?.</string>
     <string name="edit_product_title">Изменение товара</string>
     <string name="add_product_title">Новый товар</string>

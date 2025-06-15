@@ -6,7 +6,6 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.shah.carty.databinding.ItemProductBinding
-import java.util.ArrayList
 import java.util.Collections
 
 class ProductAdapter(
@@ -16,17 +15,6 @@ class ProductAdapter(
     private val onOrderChanged: (List<Product>) -> Unit
 ) : ListAdapter<Product, ProductAdapter.ProductViewHolder>(ProductDiffCallback()),
     ItemTouchHelperAdapter {
-
-    private val internalList: MutableList<Product> = ArrayList()
-
-    override fun submitList(list: List<Product>?) {
-        super.submitList(list) {
-            internalList.clear()
-            if (list != null) {
-                internalList.addAll(list)
-            }
-        }
-    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ProductViewHolder {
         val binding = ItemProductBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -41,43 +29,30 @@ class ProductAdapter(
         }
     }
 
-    override fun getItemCount(): Int {
-        return currentList.size
-    }
-
     override fun isItemDraggable(position: Int): Boolean {
-        return position < currentList.size
+        return position < itemCount
     }
 
     override fun onItemMove(fromPosition: Int, toPosition: Int): Boolean {
-        if (fromPosition < toPosition) {
-            for (i in fromPosition until toPosition) {
-                Collections.swap(internalList, i, i + 1)
-            }
-        } else {
-            for (i in fromPosition downTo toPosition + 1) {
-                Collections.swap(internalList, i, i - 1)
-            }
-        }
-        notifyItemMoved(fromPosition, toPosition)
+        val list = currentList.toMutableList()
+        Collections.swap(list, fromPosition, toPosition)
+        submitList(list)
         return true
     }
 
     override fun onDragFinished() {
-        onOrderChanged(ArrayList(internalList))
+        onOrderChanged(currentList)
     }
 
     override fun onItemDismiss(position: Int) {}
 
-
     class ProductViewHolder(private val binding: ItemProductBinding) :
         RecyclerView.ViewHolder(binding.root), ItemTouchHelperViewHolder {
         fun bind(product: Product, getDepartmentName: (Long?) -> String, onDeleteClicked: (Product) -> Unit) {
-            binding.productNameTV.text = "Товар: ${product.productName}"
+            binding.productNameTV.text = product.productName
             binding.departmentNameTV.text = getDepartmentName(product.departmentId)
             binding.unitProductItemTV.text = product.defaultUnit.getDisplayName(itemView.context)
-            binding.priceTV.text = product.defaultPrice?.toString() ?: "?"
-
+            binding.priceTV.text = product.defaultPrice?.toString() ?: "N/A"
             binding.delItemProductImageButton.setOnClickListener {
                 onDeleteClicked(product)
             }

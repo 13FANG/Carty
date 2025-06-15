@@ -7,5 +7,6 @@
     android:ellipsize="marquee"
     android:singleLine="true"
     android:textColor="#FFFFFF"
+    android:background="#CB0D47A1"
     android:fontFamily="@font/pf_highway_sans_pro"
     android:textSize="24sp" />

@@ -6,7 +6,7 @@ Carty — это нативное Android-приложение, разработ
 
 | Экран входа | Главный экран | Экран списка |
 | :---: | :---: | :---: |
-| ![Экран входа](./screenshots/1.jpg) | ![Главный экран](./screenshots/2.jpg) | ![Экран списка](./screenshots/3.jpg) |
+| ![Экран входа](https://github.com/13FANG/Carty/blob/carty/screenshot/1.jpg?raw=true) | ![Главный экран](https://github.com/13FANG/Carty/blob/carty/screenshot/2.jpg?raw=true) | ![Экран списка](https://github.com/13FANG/Carty/blob/carty/screenshot/3.jpg?raw=true) |
 
 ## ✨ Основные возможности
 

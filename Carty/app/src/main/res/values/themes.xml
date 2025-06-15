@@ -28,6 +28,7 @@
 
     <style name="AppSpinnerStyle" parent="Widget.AppCompat.Spinner.Underlined">
         <item name="android:popupBackground">@android:color/white</item>
+        <item name="android:fontFamily">@font/pf_highway_sans_pro</item>
     </style>
 
     <style name="AppCheckboxStyle" parent="Widget.AppCompat.CompoundButton.CheckBox">

@@ -191,18 +191,19 @@ class ViewShoppingListFragment : Fragment() {
         dialogBinding.addItemQuantityET.setText("1.0")
         dialogBinding.addItemDetalsButton.text = "Добавить в список"
 
-
         val dialog = MaterialAlertDialogBuilder(requireContext())
             .setView(dialogBinding.root)
-            .setCancelable(false)
+            .setCancelable(true)
             .create()
 
+        dialog.setOnDismissListener {
+            viewModel.clearProductToAdd()
+        }
         dialogBinding.addItemDetalsButton.setOnClickListener {
             val quantity = dialogBinding.addItemQuantityET.text.toString().toDoubleOrNull() ?: 1.0
             val price = dialogBinding.addItemPriceET.text.toString().toDoubleOrNull()
             viewModel.confirmAddProductToList(quantity, price, product.defaultUnit)
             dialog.dismiss()
-            viewModel.clearProductToAdd()
         }
         dialog.show()
     }
